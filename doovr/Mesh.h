@@ -24,12 +24,16 @@ public:
 	void getPosition(float* vec){ vec[0] = position[0]; vec[1] = position[1]; vec[2] = position[2]; };
 	void getOrientation(float* mat);
 
-
 	void setPosition(float* p) { position[0] = p[0]; position[1] = p[1]; position[2] = p[2]; }
 	void setOrientation(float* o) { std::copy(o, o + 16, orientation); }
 
+	vertex* getVertexArray(int* nr) { *nr = nrofVerts;  return vertexArray; }
+	triangle* gettriangleArray(int* nr) { *nr = nrofTris; return triangleArray; }
+
 	virtual void render() = 0;
 	virtual void createBuffers() = 0;
+
+
 
 protected:
 

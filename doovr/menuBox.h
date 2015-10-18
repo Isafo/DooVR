@@ -19,6 +19,9 @@ public:
 	menuBox(float x, float y, float z, float dX, float dY, float dZ, int tX, int tY, int tXLength, int tYLength, int sideX, int sideY);
 	~menuBox(void);
 
+	vertex* getVertexArray(int* nr) { *nr = nrofVerts;  return vertexArray; }
+	triangle* getTriangleArray(int* nr) { *nr = nrofTris; return triangleArray; }
+
 	float* getDim() { return dim; };
 	void setDim(float x, float y, float z);
 

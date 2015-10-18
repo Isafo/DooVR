@@ -43,6 +43,7 @@
 //#include <OVR/OVR_CAPI.h>
 #include <OVR/OVR.h>
 #include <OVR/OVR_CAPI_GL.h>
+#include <OVR\Extras\OVR_Math.h>
 //#include <OVR/Win32_GLAppUtil.h> //needed for OVR GL structs.
 
 
@@ -212,7 +213,7 @@ struct TextureBuffer
 //! Sets up a glfw window depending on the resolution of the Oculus Rift device
 static void WindowSizeCallback(GLFWwindow *p_Window, int p_Width, int p_Height);
 //! checks if the wand is colliding with a menuItem and sets the menuItems state accordingly, returns true if a menuItem choise has occured
-int handleMenu(float* wandPosition, menuBox** menuItem, const int nrOfModellingUIButtons, int* state);
+int handleMenu(Wand* _wand, menuBox** menuItem, const int nrOfModellingUIButtons, int* state);
 void GLRenderCallsOculus();
 //! reads all filenames in savedFiles folder
 std::vector<std::string> getSavedFileNames();
@@ -864,7 +865,7 @@ int Oculus::runOvr() {
 
 			// 3.2 - handelmenu and menuswitch \______________________________________________________________________________________________
 			if (aModellingStateIsActive == 0) {
-				activeButton = handleMenu(wandPos, modellingButton, NR_OF_MODELLING_BUTTONS, modellingButtonState);
+				activeButton = handleMenu(wand, modellingButton, NR_OF_MODELLING_BUTTONS, modellingButtonState);
 				switch (activeButton) {
 					//3.2.1 - new mesh button>----------------------------------------------------------------------------------------------
 				case 0: {
@@ -1637,7 +1638,7 @@ int Oculus::runOvr() {
 
 			// 4.2 - Handle buttons and button switch \______________________________________________________________________________________
 			if (aModellingStateIsActive == 0) {
-				activeButton = handleMenu(wandPos, loadButton, NR_OF_LOAD_BUTTONS, loadButtonState);
+				activeButton = handleMenu(wand, loadButton, NR_OF_LOAD_BUTTONS, loadButtonState);
 
 				switch (activeButton) {
 				case 0: {
@@ -2192,7 +2193,83 @@ void GLRenderCallsOculus(){
 }
 
 //! checks if a menu item is choosen and sets the appropriate state 
-int handleMenu(float* wandPosition, menuBox** menuItem, const int nrOfModellingUIButtons, int* state) {
+int handleMenu(Wand* _wand, menuBox** menuItem, const int nrOfModellingUIButtons, int* state) {
+	
+	float nOrigin[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+	float tmpVec[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float nDirection[4];
+
+	vertex* vertexArray;
+	int vertNr;
+	triangle* triangleArray;
+	int triNr;
+
+	for (int i = 0; i < nrOfModellingUIButtons; i++)
+	{
+		linAlg::transpose(menuItem[i]->getOrientation());
+		_wand->getPosition(tmpVec);
+
+		linAlg::calculateVec(tmpVec, menuItem[i]->getPosition(), tmpVec);
+		linAlg::vectorMatrixMult(menuItem[i]->getOrientation(), tmpVec, nOrigin);
+		_wand->getDirection(tmpVec);
+		linAlg::vectorMatrixMult(menuItem[i]->getOrientation(), tmpVec , nDirection);
+		//nOrigin = linAlg::transpose(menuItem[i]->getOrientation()) * glm::vec4(_origin - _sceneData->at(i)->getPosition(), 1.0f);
+		//nDirection = glm::vec3(glm::transpose(_sceneData->at(i)->getOrientation()) * glm::vec4(_direction, 1.0f));
+
+		linAlg::transpose(menuItem[i]->getOrientation());
+		
+
+		vertexArray = menuItem[i]->getVarray();
+		vertNr = _sceneData->at(i)->getVertNr();
+		triangleArray = _sceneData->at(i)->getTarray();
+		triNr = _sceneData->at(i)->getTriNr();
+
+		for (int j = 0; j < triNr; j++) {
+
+			temp1 = vertexArray[triangleArray[j].index[0]].xyz;
+			temp2 = vertexArray[triangleArray[j].index[1]].xyz;
+			eVec1 = glm::vec3(temp2[0], temp2[1], temp2[2]) - glm::vec3(temp1[0], temp1[1], temp1[2]);
+
+			temp2 = vertexArray[triangleArray[j].index[2]].xyz;
+			eVec2 = glm::vec3(temp2[0], temp2[1], temp2[2]) - glm::vec3(temp1[0], temp1[1], temp1[2]);
+
+			P = glm::cross(nDirection, eVec2);
+
+			pLength = glm::dot(eVec1, P);
+			if (pLength < -EPSILON || pLength > EPSILON)
+			{
+				invP = 1.f / pLength;
+
+				T = nOrigin - glm::vec3(temp1[0], temp1[1], temp1[2]);
+
+				u = glm::dot(T, P) * invP;
+				if (u > 0.0f && u < 1.0f)
+				{
+					Q = glm::cross(T, eVec1);
+
+					v = glm::dot(nDirection, Q)*invP;
+
+					if (v > 0.0f && u + v < 1.0f)
+					{
+						t = glm::dot(eVec2, Q)*invP;
+						if (t > EPSILON)
+						{
+							if (glm::length(nDirection*t) < nearestHit)
+							{
+								objectIndex = i;
+								//triangleIndex = j;??
+								nearestHit = glm::length(nDirection*t);
+								hit = nOrigin + nDirection*t;
+								rgba = glm::vec4(_sceneData->at(objectIndex)->BRDF());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	
 	for (int i = 0; i < nrOfModellingUIButtons; i++) {
 		if (wandPosition[0] < menuItem[i]->getPosition()[0] + menuItem[i]->getDim()[0] / 2.0f
 			&& wandPosition[0] > menuItem[i]->getPosition()[0] - menuItem[i]->getDim()[0] / 2.0f
