@@ -2204,10 +2204,10 @@ int handleMenu(Wand* _wand, menuBox** menuItem, const int nrOfModellingUIButtons
 	triangle* triangleArray;
 	int triNr;
 
-	for (int i = 0; i < nrOfModellingUIButtons; i++)
-	{
+	_wand->getPosition(tmpVec);
+
+	for (int i = 0; i < nrOfModellingUIButtons; i++) {
 		linAlg::transpose(menuItem[i]->getOrientation());
-		_wand->getPosition(tmpVec);
 
 		linAlg::calculateVec(tmpVec, menuItem[i]->getPosition(), tmpVec);
 		linAlg::vectorMatrixMult(menuItem[i]->getOrientation(), tmpVec, nOrigin);
@@ -2269,7 +2269,7 @@ int handleMenu(Wand* _wand, menuBox** menuItem, const int nrOfModellingUIButtons
 		}
 	}
 
-	
+	/*
 	for (int i = 0; i < nrOfModellingUIButtons; i++) {
 		if (wandPosition[0] < menuItem[i]->getPosition()[0] + menuItem[i]->getDim()[0] / 2.0f
 			&& wandPosition[0] > menuItem[i]->getPosition()[0] - menuItem[i]->getDim()[0] / 2.0f
@@ -2297,7 +2297,7 @@ int handleMenu(Wand* _wand, menuBox** menuItem, const int nrOfModellingUIButtons
 				state[i] = 0;				// set to deactivated
 			}
 		}
-	}
+	}*/
 	return -1;
 }
 
