@@ -225,6 +225,11 @@ void loadMesh(DynamicMesh* item, std::string fileName);
 void saveFile(DynamicMesh* item);
 //! exports the current mesh to an obj file
 void exportFileToObj(DynamicMesh* item);
+//! returns a random float between min and max
+float random(float min, float max);
+//! linear interpolation
+float lerp(float x1, float x2, float x)
+
 // --------------------------------------
 // --- Variable Declerations ------------
 const bool L_MULTISAMPLING = false;
@@ -653,6 +658,7 @@ int Oculus::runOvr() {
 	// 2.5.2 - variables used in save Mode >------------------------------------------------------------------------------------------------
 	MenuItem savedFeedback(boardPos[0] - 0.2f, boardPos[1] + 0.011f + 0.0125f + 0.04f, boardPos[2] + -0.04, 0.08f, 0.04f);
 
+
 	// 2.6 - Shader variables \_____________________________________________________________________________________________________________
 	Shader sceneShader;
 	sceneShader.createShader("sceneV.glsl", "sceneF.glsl");
@@ -666,6 +672,11 @@ int Oculus::runOvr() {
 	flatShader.createShader("meshFlatV.glsl", "meshFlatF.glsl");
 	Shader projectionShader;
 	projectionShader.createShader("projectionV.glsl", "projectionF.glsl");
+
+	Shader ssaoShader;
+	ssaoShader.createShader("ssaoV.glsl", "ssaoF.glsl");
+	Shader ssaoBlurShader;
+	ssaoBlurShader.createShader("ssaoBlurV.glsl", "ssaoBlurF.glsl");
 
 
 	// 2.6.1 - Uniform variables >-----------------------------------------------------------------------------------------------------------
@@ -703,6 +714,43 @@ int Oculus::runOvr() {
 	GLint locationProjMV = glGetUniformLocation(projectionShader.programID, "MV"); //modelview matrix
 	GLint locationProjP = glGetUniformLocation(projectionShader.programID, "P"); //perspective matrix
 	GLint locationProjTex = glGetUniformLocation(projectionShader.programID, "tex"); //texcoords
+
+	GLint locationSSAO_P = glGetUniformLocation(ssaoShader.programID, "P"); //perspective matrix
+	GLint locationSSAO_kernelSize = glGetUniformLocation(ssaoShader.programID, "kernelSize"); //modelview matrix
+	GLint locationSSAO_sampleKernel = glGetUniformLocation(ssaoShader.programID, "sampleKernel"); 
+	GLint locationSSAO_depthTex = glGetUniformLocation(ssaoShader.programID, "depth_tex"); //texcoords
+
+	// SSAO Variables \____________________________________________________________________________________________________________________
+	// Generate the SSAO sample kernel >-----------------------------------------------------------------------------------------------------------
+	const int KERNEL_SIZE = 32;
+	glm::vec3* ssao_kernel = new glm::vec3[KERNEL_SIZE];
+	float ssao_scale;
+
+	for (int i = 0; i < KERNEL_SIZE; i++) {
+		ssao_kernel[i] = glm::vec3(random(-1.0f, 1.0f),
+			random(-1.0f, 1.0f),
+			random(0.0f, 1.0f));
+		glm::normalize(ssao_kernel[i]);
+
+		ssao_scale = float(i) / (float)KERNEL_SIZE;
+		ssao_kernel[i] *= lerp(0.1f, 1.0f, ssao_scale * ssao_scale);
+	}
+
+
+
+
+	// Generate the SSAO noise kernel >-----------------------------------------------------------------------------------------------------------
+
+	const int NOISE_SIZE = 32;
+	glm::vec3* ssao_noise = new glm::vec3[NOISE_SIZE];
+
+	for (int i = 0; i < NOISE_SIZE; i++) {
+		ssao_noise[i] = glm::vec3(random(-1.0f, 1.0f),
+			random(-1.0f, 1.0f),
+			0.0f);
+
+		glm::normalize(ssao_noise[i]);
+	}
 
 	// 2.7 - Scene objects and variables \___________________________________________________________________________________________________
 
@@ -744,6 +792,7 @@ int Oculus::runOvr() {
 	Tool* currentTool;
 	//currentTool = new Push(modellingMesh, wand);
 	currentTool = new Drag(modellingMesh, wand);
+
 
 	//=======================================================================================================================================
 	//Render loop
@@ -2285,4 +2334,25 @@ void exportFileToObj(DynamicMesh* item) {
 	item->exportToObj();
 	meshLock.unlock();
 	th2Status = 2;
+}
+
+float random(float min, float max) {
+	
+	// error check, make sure that min < max
+	if (min > max) {
+		float temp = min;
+		min = max;
+		max = min;
+	}
+
+	float value = (float)rand() / (float)RAND_MAX;
+	float range = max - min;
+	return (value * range) + min;
+}
+
+float lerp(float x1, float x2, float x) {
+	float x2P = (x - x1) / (x2 - x1);
+	float x1P = (x2 - x) / (x2 - x1);
+
+	return x1P * x1 + x2P * x2;
 }
