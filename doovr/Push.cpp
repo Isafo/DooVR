@@ -77,9 +77,9 @@ void Push::firstSelect(DynamicMesh* mesh, Wand* wand)
 	linAlg::vectorMatrixMult(mOrientation, Dirr, newDirr);
 	linAlg::transpose(mOrientation);
 
-	intersection.xyz[0] = wPoint[0];
-	intersection.xyz[1] = wPoint[1];
-	intersection.xyz[2] = wPoint[2];
+	intersection.xyz[0] = newWPoint[0];
+	intersection.xyz[1] = newWPoint[1];
+	intersection.xyz[2] = newWPoint[2];
 	intersection.nxyz[0] = newDirr[0];
 	intersection.nxyz[1] = newDirr[1];
 	intersection.nxyz[2] = newDirr[2];
@@ -184,9 +184,9 @@ void Push::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 	linAlg::vectorMatrixMult(mOrientation, Dirr, newDirr);
 	linAlg::transpose(mOrientation);
 
-	intersection.xyz[0] = wPoint[0];
-	intersection.xyz[1] = wPoint[1];
-	intersection.xyz[2] = wPoint[2];
+	intersection.xyz[0] = newWPoint[0];
+	intersection.xyz[1] = newWPoint[1];
+	intersection.xyz[2] = newWPoint[2];
 	intersection.nxyz[0] = newDirr[0];
 	intersection.nxyz[1] = newDirr[1];
 	intersection.nxyz[2] = newDirr[2];

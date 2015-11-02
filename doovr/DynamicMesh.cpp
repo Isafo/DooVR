@@ -1195,6 +1195,7 @@ void DynamicMesh::edgeSplit(float* vPoint, float* vec, int &edge) {
 	vertexArray[tempV].nxyz[0] = tempNorm2[0];
 	vertexArray[tempV].nxyz[1] = tempNorm2[1];
 	vertexArray[tempV].nxyz[2] = tempNorm2[2];
+	vInfoArray[tempV].selected = 0.0f;
 	nrofVerts++;
 	nrofTris = nrofTris + 2;
 	

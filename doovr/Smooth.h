@@ -26,7 +26,6 @@ public:
 																	intersectionN[0] = intersection.nxyz[0];
 																	intersectionN[1] = intersection.nxyz[1];
 																	intersectionN[2] = intersection.nxyz[2]; };
-
 private:
 	float radius;
 	float strength;
