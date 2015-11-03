@@ -795,7 +795,8 @@ int Oculus::runOvr() {
 					aModellingStateIsActive--;
 				}
 				currentTool->deSelect();
-				currentTool->firstSelect(modellingMesh, wand);
+				currentTool->findIntersection(modellingMesh, wand, 0);
+				//currentTool->firstSelect(modellingMesh, wand);
 			}
 
 			//3.1.2 - move mesh >-----------------------------------------------------------------------------------------------------------

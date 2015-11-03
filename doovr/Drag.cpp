@@ -45,6 +45,48 @@ void Drag::renderIntersection(MatrixStack* MVstack, GLint locationMV) {
 
 }
 
+void Drag::findIntersection(DynamicMesh* mesh, Wand* wand, int triIndex){
+
+	float newWPoint[4];
+	float Dirr[4]; float newDirr[4];
+	float tempVec1[3]; float tempVec2[3];
+	float wPoint[4]; float* vPoint; float* vPoint2;
+	int index; int index2;
+
+	int tempEdge;
+
+	bool success = false;
+
+	float pLength = 0.0f;
+	float oLength = 0.0f;
+
+	float mLength;
+	float minLength;
+
+	linAlg::transpose(mOrientation);
+	//--< 1.0 | calculated the position and direction of the wand
+	wand->getPosition(wPoint);
+	wPoint[0] = wPoint[0] - mPosition[0];
+	wPoint[1] = wPoint[1] - mPosition[1];
+	wPoint[2] = wPoint[2] - mPosition[2];
+	wPoint[3] = 1.0f;
+	linAlg::vectorMatrixMult(mOrientation, wPoint, newWPoint);
+
+	wand->getDirection(Dirr);
+	linAlg::normVec(Dirr);
+	Dirr[3] = 1.0f;
+	linAlg::vectorMatrixMult(mOrientation, Dirr, newDirr);
+	linAlg::transpose(mOrientation);
+
+	intersection.xyz[0] = newWPoint[0];
+	intersection.xyz[1] = newWPoint[1];
+	intersection.xyz[2] = newWPoint[2];
+	intersection.nxyz[0] = newDirr[0];
+	intersection.nxyz[1] = newDirr[1];
+	intersection.nxyz[2] = newDirr[2];
+
+}
+
 void Drag::firstSelect(DynamicMesh* mesh, Wand* wand)
 {
 	float newWPoint[4];
@@ -166,7 +208,7 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 
 	float newWPoint[4];
 	float Dirr[4]; float newDirr[4];
-	float tempVec1[3]; float tempVec2[3];
+	float tempVec1[3]; float tempVec2[3]; float tempVec3[3];
 	float wPoint[4]; float* vPoint; float* vPoint2;
 	int index; int index2;
 	int tempSize;
@@ -186,6 +228,7 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 
 	tempSize = selectedSize;
 	selectedSize = 0;
+	//selectedSize = 1;
 
 	linAlg::transpose(mOrientation);
 
@@ -203,6 +246,12 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 	//linAlg::normVec(newDirr);
 	linAlg::transpose(mOrientation);
 
+	tempVec3[0] = newDirr[0];
+	tempVec3[1] = newDirr[1];
+	tempVec3[2] = newDirr[2];
+	linAlg::normVec(tempVec3);
+	l = linAlg::vecLength(newDirr);
+
 	intersection.xyz[0] = newWPoint[0];
 	intersection.xyz[1] = newWPoint[1];
 	intersection.xyz[2] = newWPoint[2];
@@ -210,7 +259,7 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 	intersection.nxyz[1] = newDirr[1];
 	intersection.nxyz[2] = newDirr[2];
 
-	if (tempSize < 2)
+	/*if (tempSize < 2)
 	{
 		deSelect();
 		firstSelect(mesh, wand);
@@ -229,12 +278,16 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 	mVertexArray[selectedVertices[0]].xyz[2] = lvPoint[2] + tempVec2[2];
 
 	linAlg::calculateVec(mVertexArray[selectedVertices[0]].xyz, tempVec1, tempVec2);
-	mVInfoArray[selectedVertices[0]].selected = 3.0f;
+	tempVec3[0] = tempVec2[0];
+	tempVec3[1] = tempVec2[1];
+	tempVec3[2] = tempVec2[2];
+	linAlg::normVec(tempVec3);
+	mVInfoArray[selectedVertices[0]].selected = 3.0f;*/
 
 	//if (mVInfoArray[selectedVertices[0]].edgePtr < 0)
 	//	std::cout << "jek";
 
-	for (int i = 1; i < tempSize; i++) {
+	for (int i = 0; i < tempSize; i++) {
 		index = selectedVertices[i];
 		//index = i;
 
@@ -248,14 +301,21 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 
 		if (mLength <  radius)
 		{
-			vNorm = mVertexArray[index].nxyz;
 			selectedVertices[selectedSize] = index; selectedSize++;
-
 			mVInfoArray[index].selected = 3.0f;
+			
+			vNorm = mVertexArray[index].nxyz;
+
+			tempVec1[0] = (vNorm[0] + tempVec3[0]) / 2.0f;
+			tempVec1[1] = (vNorm[1] + tempVec3[1]) / 2.0f;
+			tempVec1[2] = (vNorm[2] + tempVec3[2]) / 2.0f;
+			linAlg::normVec(tempVec1);
+			
+			//dot = abs(linAlg::dotProd(vNorm, tempVec3));
 			//linAlg::normVec(tempVec1);
-			mVertexArray[index].xyz[0] += tempVec2[0];
-			mVertexArray[index].xyz[1] += tempVec2[1];
-			mVertexArray[index].xyz[2] += tempVec2[2];
+			mVertexArray[index].xyz[0] += tempVec1[0] * dT * l;
+			mVertexArray[index].xyz[1] += tempVec1[1] * dT * l;
+			mVertexArray[index].xyz[2] += tempVec1[2] * dT * l;
 		}
 		else
 			mVInfoArray[index].selected = 0.0f;
@@ -280,7 +340,7 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 
 	//linAlg::calculateVec(mVertexArray[selectedVertices[0]].xyz, tempVec1, tempVec2);
 
-	for (int j = 1; j < selectedSize; j++) {
+	for (int j = 0; j < selectedSize; j++) {
 		index2 = selectedVertices[j];
 		tempEdge = mVInfoArray[index2].edgePtr;
 
@@ -299,10 +359,16 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 
 					vNorm = mVertexArray[index].nxyz;
 
+					tempVec1[0] = (vNorm[0] + tempVec3[0]) / 2.0f;
+					tempVec1[1] = (vNorm[1] + tempVec3[1]) / 2.0f;
+					tempVec1[2] = (vNorm[2] + tempVec3[2]) / 2.0f;
 					linAlg::normVec(tempVec1);
-					mVertexArray[index].xyz[0] += tempVec2[0];
-					mVertexArray[index].xyz[1] += tempVec2[1];
-					mVertexArray[index].xyz[2] += tempVec2[2];
+
+					//dot = abs(linAlg::dotProd(vNorm, tempVec3));
+					//linAlg::normVec(tempVec1);
+					mVertexArray[index].xyz[0] += tempVec1[0] * dT * l;
+					mVertexArray[index].xyz[1] += tempVec1[1] * dT * l;
+					mVertexArray[index].xyz[2] += tempVec1[2] * dT * l;
 				}
 			}
 			tempEdge = mEdgeArray[mEdgeArray[tempEdge].nextEdge].sibling;
