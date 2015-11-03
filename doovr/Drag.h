@@ -56,7 +56,8 @@ private:
 	float zVec[3];
 	float iTransform[16];
 
-	float midPoint[3];
+	float lvPoint[3];
+	float lwPoint[3];
 	float midLength;
 	int mIndex;
 

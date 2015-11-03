@@ -107,7 +107,7 @@ void Drag::firstSelect(DynamicMesh* mesh, Wand* wand)
 
 			mVInfoArray[i].selected = 4.0f;
 			minLength = mLength;
-			mIndex = i;
+			mIndex = 0;
 			break;
 		}
 	}
@@ -137,7 +137,7 @@ void Drag::firstSelect(DynamicMesh* mesh, Wand* wand)
 					mVInfoArray[index].selected = 4.0f;
 					if (mLength < minLength){
 						minLength = mLength;
-						mIndex = index;
+						mIndex = selectedSize;
 					}
 				}
 			}
@@ -146,9 +146,16 @@ void Drag::firstSelect(DynamicMesh* mesh, Wand* wand)
 		} while (tempEdge != mVInfoArray[index2].edgePtr);
 	}
 
-	midPoint[0] = mVertexArray[mIndex].xyz[0];
-	midPoint[1] = mVertexArray[mIndex].xyz[1];
-	midPoint[2] = mVertexArray[mIndex].xyz[2];
+	index = selectedVertices[0];
+	selectedVertices[0] = selectedVertices[mIndex];
+	selectedVertices[mIndex] = index;
+
+	lvPoint[0] = mVertexArray[selectedVertices[0]].xyz[0];
+	lvPoint[1] = mVertexArray[selectedVertices[0]].xyz[1];
+	lvPoint[2] = mVertexArray[selectedVertices[0]].xyz[2];
+	lwPoint[0] = newWPoint[0];
+	lwPoint[1] = newWPoint[1];
+	lwPoint[2] = newWPoint[2];
 	// 2.4 >---------------------
 
 
@@ -203,7 +210,31 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 	intersection.nxyz[1] = newDirr[1];
 	intersection.nxyz[2] = newDirr[2];
 
-	for (int i = 0; i < tempSize; i++) {
+	if (tempSize < 2)
+	{
+		deSelect();
+		firstSelect(mesh, wand);
+		return;
+	}
+
+
+	tempVec1[0] = mVertexArray[selectedVertices[0]].xyz[0];
+	tempVec1[1] = mVertexArray[selectedVertices[0]].xyz[1];
+	tempVec1[2] = mVertexArray[selectedVertices[0]].xyz[2];
+
+	linAlg::calculateVec(newWPoint, lwPoint, tempVec2);
+
+	mVertexArray[selectedVertices[0]].xyz[0] = lvPoint[0] + tempVec2[0];
+	mVertexArray[selectedVertices[0]].xyz[1] = lvPoint[1] + tempVec2[1];
+	mVertexArray[selectedVertices[0]].xyz[2] = lvPoint[2] + tempVec2[2];
+
+	linAlg::calculateVec(mVertexArray[selectedVertices[0]].xyz, tempVec1, tempVec2);
+	mVInfoArray[selectedVertices[0]].selected = 3.0f;
+
+	//if (mVInfoArray[selectedVertices[0]].edgePtr < 0)
+	//	std::cout << "jek";
+
+	for (int i = 1; i < tempSize; i++) {
 		index = selectedVertices[i];
 		//index = i;
 
@@ -221,23 +252,35 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 			selectedVertices[selectedSize] = index; selectedSize++;
 
 			mVInfoArray[index].selected = 3.0f;
-			linAlg::normVec(tempVec1);
-			mVertexArray[index].xyz[0] += newDirr[0] * dT;
-			mVertexArray[index].xyz[1] += newDirr[1] * dT;
-			mVertexArray[index].xyz[2] += newDirr[2] * dT;
+			//linAlg::normVec(tempVec1);
+			mVertexArray[index].xyz[0] += tempVec2[0];
+			mVertexArray[index].xyz[1] += tempVec2[1];
+			mVertexArray[index].xyz[2] += tempVec2[2];
 		}
 		else
 			mVInfoArray[index].selected = 0.0f;
 	}
 
-	if (selectedSize == 0)
+	if (selectedSize < 2)
 	{
 		deSelect();
 		firstSelect(mesh, wand);
 		return;
 	}
 
-	for (int j = 0; j < selectedSize; j++) {
+	//tempVec1[0] = mVertexArray[selectedVertices[0]].xyz[0];
+	//tempVec1[1] = mVertexArray[selectedVertices[0]].xyz[1];
+	//tempVec1[2] = mVertexArray[selectedVertices[0]].xyz[2];
+
+	//linAlg::calculateVec(newWPoint, lwPoint, tempVec2);
+
+	//mVertexArray[selectedVertices[0]].xyz[0] = lvPoint[0] + tempVec2[0];
+	//mVertexArray[selectedVertices[0]].xyz[1] = lvPoint[1] + tempVec2[1];
+	//mVertexArray[selectedVertices[0]].xyz[2] = lvPoint[2] + tempVec2[2];
+
+	//linAlg::calculateVec(mVertexArray[selectedVertices[0]].xyz, tempVec1, tempVec2);
+
+	for (int j = 1; j < selectedSize; j++) {
 		index2 = selectedVertices[j];
 		tempEdge = mVInfoArray[index2].edgePtr;
 
@@ -257,9 +300,9 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 					vNorm = mVertexArray[index].nxyz;
 
 					linAlg::normVec(tempVec1);
-					mVertexArray[index].xyz[0] += newDirr[0] * dT;
-					mVertexArray[index].xyz[1] += newDirr[1] * dT;
-					mVertexArray[index].xyz[2] += newDirr[2] * dT;
+					mVertexArray[index].xyz[0] += tempVec2[0];
+					mVertexArray[index].xyz[1] += tempVec2[1];
+					mVertexArray[index].xyz[2] += tempVec2[2];
 				}
 			}
 			tempEdge = mEdgeArray[mEdgeArray[tempEdge].nextEdge].sibling;
