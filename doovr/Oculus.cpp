@@ -446,7 +446,6 @@ int Oculus::runOvr() {
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ssaoDepthTex, 0);
 
-	//glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, wandShadowMap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -705,9 +704,6 @@ int Oculus::runOvr() {
 
 	Shader ssaoShader;
 	ssaoShader.createShader("ssaoV.glsl", "ssaoF.glsl");
-	Shader ssaoBlurShader;
-	ssaoBlurShader.createShader("ssaoBlurV.glsl", "ssaoBlurF.glsl");
-
 
 	// 2.6.1 - Uniform variables >-----------------------------------------------------------------------------------------------------------
 	GLint locationLP = glGetUniformLocation(sceneShader.programID, "lightPos");
@@ -724,6 +720,7 @@ int Oculus::runOvr() {
 	GLint locationMeshWP = glGetUniformLocation(meshShader.programID, "wandPos");
 	GLint locationMeshWD = glGetUniformLocation(meshShader.programID, "wandDirr");
 	GLint locationMeshTex = glGetUniformLocation(meshShader.programID, "tex"); //texture sampler
+	GLint locationMesh_SSAOTex = glGetUniformLocation(meshShader.programID, "ssao_tex"); //texture sampler
 	GLint locationMeshDTex = glGetUniformLocation(meshShader.programID, "dTex"); //texture sampler
 	GLint locationMeshLMVP = glGetUniformLocation(meshShader.programID, "LMVP");
 	GLint locationMeshPP = glGetUniformLocation(meshShader.programID, "PP");
@@ -1436,6 +1433,9 @@ int Oculus::runOvr() {
 
 					glBindTexture(GL_TEXTURE_2D, wandShadowMap);
 					glUniform1i(locationMeshDTex, 0);
+
+					glBindTexture(GL_TEXTURE_2D, ssaoDepthTex);
+					glUniform1i(locationMesh_SSAOTex, 0);
 
 					MVstack.push();
 					MVstack.translate(modellingMesh->getPosition());
