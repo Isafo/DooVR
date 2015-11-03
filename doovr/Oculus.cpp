@@ -394,14 +394,7 @@ int Oculus::runOvr() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	//glDrawBuffer(GL_NONE); // No color buffer is drawn to.
-	/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
-	*/
+
 	//Assign the shadow map to texture channel 0 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, wandShadowMap);
@@ -419,6 +412,43 @@ int Oculus::runOvr() {
 	//glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, wandShadowMap, 0);
 	//glDrawBuffer(GL_NONE);
 	//glReadBuffer(GL_NONE);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+	if (Status != GL_FRAMEBUFFER_COMPLETE) {
+		printf("FB error, status: 0x%x\n", Status);
+		return false;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// SSAO depth FBO \_____________________________________________________________________________________________________________________
+	// create and set up the FBO
+	GLuint ssaoFBO;
+	glGenFramebuffers(2, &ssaoFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
+
+	GLfloat border[] = { 1.0f, 0.0f, 0.0f, 0.0f };
+
+	GLuint ssaoDepthTex;
+	glGenTextures(1, &ssaoDepthTex);
+	glBindTexture(GL_TEXTURE_2D, ssaoDepthTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+
+	//Assign the shadow map to texture channel 0 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, ssaoDepthTex);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ssaoDepthTex, 0);
+
+	//glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, wandShadowMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -716,13 +746,16 @@ int Oculus::runOvr() {
 	GLint locationProjTex = glGetUniformLocation(projectionShader.programID, "tex"); //texcoords
 
 	GLint locationSSAO_P = glGetUniformLocation(ssaoShader.programID, "P"); //perspective matrix
+	GLint locationSSAO_MV = glGetUniformLocation(ssaoShader.programID, "MV"); //texcoords
 	GLint locationSSAO_kernelSize = glGetUniformLocation(ssaoShader.programID, "kernelSize"); //modelview matrix
 	GLint locationSSAO_sampleKernel = glGetUniformLocation(ssaoShader.programID, "sampleKernel"); 
 	GLint locationSSAO_depthTex = glGetUniformLocation(ssaoShader.programID, "depth_tex"); //texcoords
+	GLint locationSSAO_noiseKernel = glGetUniformLocation(ssaoShader.programID, "noiseKernel"); //texcoords
+	GLint locationSSAO_noiseScale = glGetUniformLocation(ssaoShader.programID, "noiseScale"); //texcoords
 
 	// SSAO Variables \____________________________________________________________________________________________________________________
 	// Generate the SSAO sample kernel >-----------------------------------------------------------------------------------------------------------
-	const int KERNEL_SIZE = 32;
+	const int KERNEL_SIZE = 16;
 	glm::vec3* ssao_kernel = new glm::vec3[KERNEL_SIZE];
 	float ssao_scale;
 
@@ -736,21 +769,30 @@ int Oculus::runOvr() {
 		ssao_kernel[i] *= lerp(0.1f, 1.0f, ssao_scale * ssao_scale);
 	}
 
-
-
-
+	
 	// Generate the SSAO noise kernel >-----------------------------------------------------------------------------------------------------------
 
-	const int NOISE_SIZE = 32;
-	glm::vec3* ssao_noise = new glm::vec3[NOISE_SIZE];
+	const int NOISE_SIZE = 4;
+	int noiseDataSize = NOISE_SIZE * NOISE_SIZE;
+	glm::vec3* ssao_noise = new glm::vec3[noiseDataSize];
 
-	for (int i = 0; i < NOISE_SIZE; i++) {
+	for (int i = 0; i < noiseDataSize; i++) {
 		ssao_noise[i] = glm::vec3(random(-1.0f, 1.0f),
 			random(-1.0f, 1.0f),
 			0.0f);
 
 		glm::normalize(ssao_noise[i]);
 	}
+
+	float noiseScale[2]; noiseScale[0] = windowSize.w / NOISE_SIZE; noiseScale[1] =	windowSize.h / NOISE_SIZE;
+
+	glUniformMatrix4fv(locationSSAO_noiseKernel, 1, GL_FALSE, &ssao_noise[0][0]);
+	glUniformMatrix4fv(locationSSAO_sampleKernel, 1, GL_FALSE, &ssao_kernel[0][0]);
+	glUniform2fv(locationSSAO_noiseScale, 1, noiseScale);
+	glUniform1ui(locationSSAO_kernelSize, KERNEL_SIZE);
+
+	delete[] ssao_kernel;
+	delete[] ssao_noise;
 
 	// 2.7 - Scene objects and variables \___________________________________________________________________________________________________
 
@@ -1089,41 +1131,29 @@ int Oculus::runOvr() {
 			glClear(GL_DEPTH_BUFFER_BIT);
 			glUseProgram(projectionShader.programID);
 
-			//glm::mat4 projP = glm::perspective(30.0f, 1.0f, 0.01f, 10.0f);
 			glm::mat4 projP = glm::ortho(-0.1f, 0.1f, -0.1f, 0.1f, 0.0f, 1.0f);
 			glm::transpose(projP);
 			glUniformMatrix4fv(locationProjP, 1, GL_FALSE, &projP[0][0]);
-			//glUniformMatrix4fv(locationP, 1, GL_FALSE, &(g_ProjectionMatrix[0].Transposed().M[0][0]));
 			MVstack.push();
 
-			//pmat4 = wand->getOrientation();
-			//linAlg::invertMatrix(pmat4, unitMat);
-			//linAlg::transpose(unitMat);
-			//MVstack.multiply(pmat4);
+				glm::vec3 gWandPos = glm::vec3(wandPos[0], wandPos[1], wandPos[2]);
+				wand->getDirection(tempVec);
+				glm::vec3 gWandDirr = glm::vec3(tempVec[0], tempVec[1], tempVec[2]);
 
-			//wand->getPosition(wandPos);
-			glm::vec3 gWandPos = glm::vec3(wandPos[0], wandPos[1], wandPos[2]);
-			wand->getDirection(tempVec);
-			glm::vec3 gWandDirr = glm::vec3(tempVec[0], tempVec[1], tempVec[2]);
-			//tempVec[0] = -wandPos[0]; tempVec[1] = -wandPos[1]; tempVec[2] = -wandPos[2];
-			//MVstack.translate(tempVec);
+				glm::normalize(gWandDirr);
 
-			glm::normalize(gWandDirr);
+				glm::mat4 camTrans = glm::lookAt(gWandPos, gWandPos + gWandDirr, glm::vec3(0.0f, 0.0f, 1.0f));
+				MVstack.multiply(&camTrans[0][0]);
 
-			glm::mat4 camTrans = glm::lookAt(gWandPos, gWandPos + gWandDirr, glm::vec3(0.0f, 0.0f, 1.0f));
-			//glm::mat4 camTrans = glm::lookAt(glm::vec3(modellingMesh->getPosition()[0], modellingMesh->getPosition()[1], modellingMesh->getPosition()[2] + 0.1), glm::vec3(modellingMesh->getPosition()[0], modellingMesh->getPosition()[1], modellingMesh->getPosition()[2]), glm::vec3(0.0f, 1.0f, 0.0f));
-			MVstack.multiply(&camTrans[0][0]);
+				MVstack.push();
+					MVstack.translate(modellingMesh->getPosition());
+					MVstack.multiply(modellingMesh->getOrientation());
+					linAlg::matrixMult(&projP[0][0], MVstack.getCurrentMatrix(), LMVP);
+					glUniformMatrix4fv(locationProjMV, 1, GL_FALSE, LMVP);
+					linAlg::matrixMult(biasMatrix, LMVP, LMVP);
 
-			MVstack.push();
-			MVstack.translate(modellingMesh->getPosition());
-			MVstack.multiply(modellingMesh->getOrientation());
-			//MVstack.multiply(&projP[0][0]);
-			linAlg::matrixMult(&projP[0][0], MVstack.getCurrentMatrix(), LMVP);
-			glUniformMatrix4fv(locationProjMV, 1, GL_FALSE, LMVP);
-			linAlg::matrixMult(biasMatrix, LMVP, LMVP);
-
-			modellingMesh->render();
-			MVstack.pop();
+					modellingMesh->render();
+				MVstack.pop();
 			MVstack.pop();
 
 			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1131,9 +1161,6 @@ int Oculus::runOvr() {
 			//glBindFramebuffer(GL_READ_FRAMEBUFFER, wandViewFBO);
 			//glReadBuffer(GL_COLOR_ATTACHMENT0);
 
-			//glReadPixels(512, 512, 1, 1, GL_RGB, GL_FLOAT, &pixel);
-
-			//std::cout << pixel << std::endl;
 			glReadBuffer(GL_NONE);
 			//glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 			//currentTool->findIntersection(modellingMesh, wand, Pixel);
@@ -1143,22 +1170,16 @@ int Oculus::runOvr() {
 			glm::vec3 interP = glm::vec3(intersectionP[0], intersectionP[1], intersectionP[2]);
 			wand->getDirection(tempVec);
 			glm::vec3 interN = glm::vec3(intersectionN[0], intersectionN[1], intersectionN[2]);
-			//tempVec[0] = -wandPos[0]; tempVec[1] = -wandPos[1]; tempVec[2] = -wandPos[2];
-			//MVstack.translate(tempVec);
-
 
 			glm::mat4 interTrans = glm::lookAt(gWandPos, gWandPos + gWandDirr, glm::vec3(0.0f, 0.0f, 1.0f));
-			//glm::mat4 camTrans = glm::lookAt(glm::vec3(modellingMesh->getPosition()[0], modellingMesh->getPosition()[1], modellingMesh->getPosition()[2] + 0.1), glm::vec3(modellingMesh->getPosition()[0], modellingMesh->getPosition()[1], modellingMesh->getPosition()[2]), glm::vec3(0.0f, 1.0f, 0.0f));
 
 			MVstack.push();
-			MVstack.multiply(&interTrans[0][0]);
-			MVstack.translate(modellingMesh->getPosition());
-			MVstack.multiply(modellingMesh->getOrientation());
-			//MVstack.multiply(&projP[0][0]);
-			linAlg::matrixMult(&projP[0][0], MVstack.getCurrentMatrix(), LMVP);
-			linAlg::matrixMult(biasMatrix, LMVP, LMVP);
+				MVstack.multiply(&interTrans[0][0]);
+				MVstack.translate(modellingMesh->getPosition());
+				MVstack.multiply(modellingMesh->getOrientation());
+				linAlg::matrixMult(&projP[0][0], MVstack.getCurrentMatrix(), LMVP);
+				linAlg::matrixMult(biasMatrix, LMVP, LMVP);
 			MVstack.pop();
-
 
 			// get hmd eye poses \__________________________________________________________________________________________________________________
 			// Get both eye poses simultaneously, with IPD offset already included.
@@ -1175,13 +1196,40 @@ int Oculus::runOvr() {
 
 			for (int l_EyeIndex = 0; l_EyeIndex < ovrEye_Count; l_EyeIndex++) {
 				// Increment to use next texture, just before writing
-
 				eyeRenderTexture[l_EyeIndex]->TextureSet->CurrentIndex = (eyeRenderTexture[l_EyeIndex]->TextureSet->CurrentIndex + 1) % eyeRenderTexture[l_EyeIndex]->TextureSet->TextureCount;
 
 				// Switch to eye render target
 				eyeRenderTexture[l_EyeIndex]->SetAndClearRenderSurface(eyeDepthBuffer[l_EyeIndex]);
 
+				// SSAO depth map \_____________________________________________________________________________________________________________________
+				glViewport(0, 0, 1024, 1024);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ssaoFBO);
+				glClear(GL_DEPTH_BUFFER_BIT);
+				glUseProgram(ssaoShader.programID);
 
+				//glUniformMatrix4fv(locationP, 1, GL_FALSE, &(g_ProjectionMatrix[0].Transposed().M[0][0]));
+				MVstack.push();
+
+					glUniformMatrix4fv(locationSSAO_P, 1, GL_FALSE, &(oProjectionMatrix[l_EyeIndex].Transposed().M[0][0]));
+
+					// Multiply with orientation retrieved from sensor...
+					OVR::Quatf l_Orientation = OVR::Quatf(EyeRenderPose[l_EyeIndex].Orientation);
+					OVR::Matrix4f l_ModelViewMatrix = OVR::Matrix4f(l_Orientation.Inverted());
+					MVstack.multiply(&(l_ModelViewMatrix.Transposed().M[0][0]));
+					
+					//!-- Translation due to positional tracking (DK2) and IPD...
+					float eyePoses[3] = { -EyeRenderPose[l_EyeIndex].Position.x, -EyeRenderPose[l_EyeIndex].Position.y, -EyeRenderPose[l_EyeIndex].Position.z };
+					MVstack.translate(eyePoses);
+
+					MVstack.push();
+						MVstack.translate(modellingMesh->getPosition());
+						MVstack.multiply(modellingMesh->getOrientation());
+						glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
+						modellingMesh->render();
+					MVstack.pop();
+				MVstack.pop();
+
+				glReadBuffer(GL_NONE);
 
 				// 3.3 OCULUS/CAMERA TRANSFORMS \______________________________________________________________________________________________
 				MVstack.push();
@@ -1214,6 +1262,7 @@ int Oculus::runOvr() {
 				linAlg::vectorMatrixMult(mat4, lPos, LP);
 				linAlg::vectorMatrixMult(mat4, lPos2, lPosTemp);
 				glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix()); //TODO: check if this uniform is needed
+
 
 				// 3.4 - Scene Matrix stack \__________________________________________________________________________________________________
 				MVstack.push();

@@ -7,12 +7,9 @@ in vec4 uv;
 in vec2 ssao_uv;
 in mat4 projMat;
 
-uniform vec4 lightPos;
-uniform vec4 lightPos2;
-
 uniform sampler2D depth_tex;
 //uniform sampler2D normal_tex;
-uniform sampler2D noise_tex;
+//uniform sampler2D noise_tex;
 
 uniform float Radius;
 
@@ -23,6 +20,7 @@ uniform float hemisphereRadius = 1.5;
 uniform float power = 2.0;
 uniform vec2 noiseScale; // scale to fit the ssao tex coords to the noise kernel
 uniform mat4 sampleKernel[kernelSize];
+uniform mat4 noiseKernel[kernelSize];
 
 layout(location=0) out vec4 result;
 
@@ -71,7 +69,8 @@ void main () {
 	vec3 viewNormal = normalize(texture(normal_tex, ssao_uv).xyz * 2.0 - 1.0);
 
 	// calculate the change-of-bias mat
-	vec3 rotVec = texture(noise_tex, ssao_uv * noiseScale).xyz * 2.0 - 1.0;
+	vec3 rotVec = vec3(noiseKernel[ssao_uv][ssao_uv] * noiseScale) * 2.0 - 1.0;
+	//vec3 rotVec = texture(noise_tex, ssao_uv * noiseScale).xyz * 2.0 - 1.0;
 	vec3 tangent = normalize(rotvec - viewNormal * dot(rotVec, viewNormal));
 	vec3 bitangent = cross(viewNormal, tangent);
 	mat3 tbn = mat3(tangent, bitangent, viewNormal);
