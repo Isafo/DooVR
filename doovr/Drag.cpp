@@ -311,11 +311,11 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 			tempVec1[2] = (vNorm[2] + tempVec3[2]) / 2.0f;
 			linAlg::normVec(tempVec1);
 			
-			//dot = abs(linAlg::dotProd(vNorm, tempVec3));
+			dot = abs(linAlg::dotProd(vNorm, tempVec3));
 			//linAlg::normVec(tempVec1);
-			mVertexArray[index].xyz[0] += tempVec1[0] * dT * l;
-			mVertexArray[index].xyz[1] += tempVec1[1] * dT * l;
-			mVertexArray[index].xyz[2] += tempVec1[2] * dT * l;
+			mVertexArray[index].xyz[0] += tempVec1[0] * dT * l*dot;
+			mVertexArray[index].xyz[1] += tempVec1[1] * dT * l*dot;
+			mVertexArray[index].xyz[2] += tempVec1[2] * dT * l*dot;
 		}
 		else
 			mVInfoArray[index].selected = 0.0f;
@@ -364,11 +364,11 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 					tempVec1[2] = (vNorm[2] + tempVec3[2]) / 2.0f;
 					linAlg::normVec(tempVec1);
 
-					//dot = abs(linAlg::dotProd(vNorm, tempVec3));
+					dot = abs(linAlg::dotProd(vNorm, tempVec3));
 					//linAlg::normVec(tempVec1);
-					mVertexArray[index].xyz[0] += tempVec1[0] * dT * l;
-					mVertexArray[index].xyz[1] += tempVec1[1] * dT * l;
-					mVertexArray[index].xyz[2] += tempVec1[2] * dT * l;
+					mVertexArray[index].xyz[0] += tempVec1[0] * dT * l * dot;
+					mVertexArray[index].xyz[1] += tempVec1[1] * dT * l * dot;
+					mVertexArray[index].xyz[2] += tempVec1[2] * dT * l * dot;
 				}
 			}
 			tempEdge = mEdgeArray[mEdgeArray[tempEdge].nextEdge].sibling;

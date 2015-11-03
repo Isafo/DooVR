@@ -619,7 +619,7 @@ int Oculus::runOvr() {
 	/*! tool 0 = push/pull
 	1 =
 	*/
-	int activeTool = 0;
+	int activeTool = 2;
 	tool[activeTool].setState(true);
 	// 2.5.2 - variables used in Load Mode >------------------------------------------------------------------------------------------------
 	const int NR_OF_LOAD_BUTTONS = 2;
@@ -742,7 +742,7 @@ int Oculus::runOvr() {
 	StaticMesh* loaderMesh;
 
 	Tool* currentTool;
-	currentTool = new Push(modellingMesh, wand);
+	currentTool = new BuildUp(modellingMesh, wand);
 	//currentTool = new Drag(modellingMesh, wand);
 
 	//=======================================================================================================================================
@@ -794,7 +794,7 @@ int Oculus::runOvr() {
 					currentTool->deSelect();
 					aModellingStateIsActive--;
 				}
-				currentTool->deSelect();
+				//currentTool->deSelect();
 				currentTool->findIntersection(modellingMesh, wand, 0);
 				//currentTool->firstSelect(modellingMesh, wand);
 			}

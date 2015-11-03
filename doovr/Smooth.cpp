@@ -45,6 +45,48 @@ void Smooth::renderIntersection(MatrixStack* MVstack, GLint locationMV) {
 
 }
 
+void Smooth::findIntersection(DynamicMesh* mesh, Wand* wand, int triIndex){
+
+	float newWPoint[4];
+	float Dirr[4]; float newDirr[4];
+	float tempVec1[3]; float tempVec2[3];
+	float wPoint[4]; float* vPoint; float* vPoint2;
+	int index; int index2;
+
+	int tempEdge;
+
+	bool success = false;
+
+	float pLength = 0.0f;
+	float oLength = 0.0f;
+
+	float mLength;
+	float minLength;
+
+	linAlg::transpose(mOrientation);
+	//--< 1.0 | calculated the position and direction of the wand
+	wand->getPosition(wPoint);
+	wPoint[0] = wPoint[0] - mPosition[0];
+	wPoint[1] = wPoint[1] - mPosition[1];
+	wPoint[2] = wPoint[2] - mPosition[2];
+	wPoint[3] = 1.0f;
+	linAlg::vectorMatrixMult(mOrientation, wPoint, newWPoint);
+
+	wand->getDirection(Dirr);
+	linAlg::normVec(Dirr);
+	Dirr[3] = 1.0f;
+	linAlg::vectorMatrixMult(mOrientation, Dirr, newDirr);
+	linAlg::transpose(mOrientation);
+
+	intersection.xyz[0] = newWPoint[0];
+	intersection.xyz[1] = newWPoint[1];
+	intersection.xyz[2] = newWPoint[2];
+	intersection.nxyz[0] = newDirr[0];
+	intersection.nxyz[1] = newDirr[1];
+	intersection.nxyz[2] = newDirr[2];
+
+}
+
 void Smooth::firstSelect(DynamicMesh* mesh, Wand* wand)
 {
 	float newWPoint[4];
