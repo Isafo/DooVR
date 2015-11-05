@@ -62,11 +62,11 @@ void main () {
 	viewPos /= viewPos.w;
 
 	// calculate the change-of-bias mat
-	vec3 rotVec = vec3(noiseKernel[ssao_uv][ssao_uv] * noiseScale) * 2.0 - 1.0;
+	vec3 rotVec = noiseKernel[ssao_uv] * noiseScale) * 2.0 - 1.0;
 	//vec3 rotVec = texture(noise_tex, ssao_uv * noiseScale).xyz * 2.0 - 1.0;
-	vec3 tangent = normalize(rotvec - viewNormal * dot(rotVec, viewNormal));
+	vec3 tangent = normalize(rotVec - viewNormal * dot(rotVec, viewNormal));
 	vec3 bitangent = cross(viewNormal, tangent);
 	mat3 tbn = mat3(tangent, bitangent, viewNormal);
 
-	result = vec4(ssao(tbn, viewPos, Radius));
+	result = vec4(ssao(tbn, vec3(viewPos), Radius));
 }
