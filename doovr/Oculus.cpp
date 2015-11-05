@@ -228,7 +228,7 @@ void exportFileToObj(DynamicMesh* item);
 //! returns a random float between min and max
 float random(float min, float max);
 //! linear interpolation
-float lerp(float x1, float x2, float x)
+float lerp(float x1, float x2, float x);
 
 // --------------------------------------
 // --- Variable Declerations ------------
@@ -428,8 +428,6 @@ int Oculus::runOvr() {
 	glGenFramebuffers(2, &ssaoFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
 
-	GLfloat border[] = { 1.0f, 0.0f, 0.0f, 0.0f };
-
 	GLuint ssaoDepthTex;
 	glGenTextures(1, &ssaoDepthTex);
 	glBindTexture(GL_TEXTURE_2D, ssaoDepthTex);
@@ -450,7 +448,7 @@ int Oculus::runOvr() {
 	glReadBuffer(GL_NONE);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
 	if (Status != GL_FRAMEBUFFER_COMPLETE) {
 		printf("FB error, status: 0x%x\n", Status);
@@ -752,7 +750,7 @@ int Oculus::runOvr() {
 
 	// SSAO Variables \____________________________________________________________________________________________________________________
 	// Generate the SSAO sample kernel >-----------------------------------------------------------------------------------------------------------
-	const int KERNEL_SIZE = 16;
+	const int KERNEL_SIZE = 9;
 	glm::vec3* ssao_kernel = new glm::vec3[KERNEL_SIZE];
 	float ssao_scale;
 
@@ -769,7 +767,7 @@ int Oculus::runOvr() {
 	
 	// Generate the SSAO noise kernel >-----------------------------------------------------------------------------------------------------------
 
-	const int NOISE_SIZE = 4;
+	const int NOISE_SIZE = 3;
 	int noiseDataSize = NOISE_SIZE * NOISE_SIZE;
 	glm::vec3* ssao_noise = new glm::vec3[noiseDataSize];
 
@@ -783,8 +781,8 @@ int Oculus::runOvr() {
 
 	float noiseScale[2]; noiseScale[0] = windowSize.w / NOISE_SIZE; noiseScale[1] =	windowSize.h / NOISE_SIZE;
 
-	glUniformMatrix4fv(locationSSAO_noiseKernel, 1, GL_FALSE, &ssao_noise[0][0]);
-	glUniformMatrix4fv(locationSSAO_sampleKernel, 1, GL_FALSE, &ssao_kernel[0][0]);
+	glUniform3fv(locationSSAO_noiseKernel, noiseDataSize, (float*)ssao_noise);
+	glUniform3fv(locationSSAO_sampleKernel, KERNEL_SIZE, (float*)ssao_kernel);
 	glUniform2fv(locationSSAO_noiseScale, 1, noiseScale);
 	glUniform1ui(locationSSAO_kernelSize, KERNEL_SIZE);
 
@@ -1237,13 +1235,13 @@ int Oculus::runOvr() {
 				glUniform1i(locationTex, 0);
 
 				// Multiply with orientation retrieved from sensor...
-				OVR::Quatf l_Orientation = OVR::Quatf(EyeRenderPose[l_EyeIndex].Orientation);
-				OVR::Matrix4f l_ModelViewMatrix = OVR::Matrix4f(l_Orientation.Inverted());
+				//OVR::Quatf l_Orientation = OVR::Quatf(EyeRenderPose[l_EyeIndex].Orientation);
+				//OVR::Matrix4f l_ModelViewMatrix = OVR::Matrix4f(l_Orientation.Inverted());
 				MVstack.multiply(&(l_ModelViewMatrix.Transposed().M[0][0]));
 				//MVstack.multiply(wand->getOrientation());
 
 				//!-- Translation due to positional tracking (DK2) and IPD...
-				float eyePoses[3] = { -EyeRenderPose[l_EyeIndex].Position.x, -EyeRenderPose[l_EyeIndex].Position.y, -EyeRenderPose[l_EyeIndex].Position.z };
+				//float eyePoses[3] = { -EyeRenderPose[l_EyeIndex].Position.x, -EyeRenderPose[l_EyeIndex].Position.y, -EyeRenderPose[l_EyeIndex].Position.z };
 				MVstack.translate(eyePoses);
 				//wand->getPosition(tempVec);
 				//tempVec[0] = -tempVec[0]; tempVec[1] = -tempVec[1]; tempVec[2] = -tempVec[2];

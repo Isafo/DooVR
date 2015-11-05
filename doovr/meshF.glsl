@@ -25,11 +25,12 @@ float blurSSAO() {
 	for ( int i = 0; i < blurSize; i++) {
 		for (int j = 0; j < blurSize; i++) {
 			vec2 offset = (hlim + vec2(float(i), float(j))) * texelSize;
-			result += texture(ssao_tex, uv + offset).r;
+			result += texture(ssao_tex, uv.st + offset).r;
 		}
 	}
 
 	result = result / float(blurSize * blurSize);
+	return result;
 }
 
 
