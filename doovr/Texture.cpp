@@ -1,6 +1,6 @@
 #include "Texture.h";
 
-Texture::Texture(){
+Texture::Texture() {
 }
 
 Texture::~Texture() {
@@ -10,7 +10,7 @@ Texture::Texture(char* filepath) {
 	textureID = loadDDS(filepath);
 }
 
-GLuint Texture::loadDDS(const char * imagepath){
+GLuint Texture::loadDDS(const char * imagepath) {
 	const unsigned int FOURCC_DXT1 = 0x31545844; // Equivalent to "DXT1" in ASCII
 	const unsigned int FOURCC_DXT3 = 0x33545844; // Equivalent to "DXT3" in ASCII
 	const unsigned int FOURCC_DXT5 = 0x35545844; // Equivalent to "DXT5" in ASCII
@@ -52,8 +52,7 @@ GLuint Texture::loadDDS(const char * imagepath){
 
 	unsigned int components = (fourCC == FOURCC_DXT1) ? 3 : 4;
 	unsigned int format;
-	switch (fourCC)
-	{
+	switch (fourCC) {
 	case FOURCC_DXT1:
 		format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 		break;
@@ -81,8 +80,7 @@ GLuint Texture::loadDDS(const char * imagepath){
 	unsigned int offset = 0;
 
 	/* load the mipmaps */
-	for (unsigned int level = 0; level < mipMapCount && (width || height); ++level)
-	{
+	for (unsigned int level = 0; level < mipMapCount && (width || height); ++level) {
 		unsigned int size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
 		glCompressedTexImage2D(GL_TEXTURE_2D, level, format, width, height,
 			0, size, buffer + offset);

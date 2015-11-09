@@ -405,9 +405,9 @@ int Oculus::runOvr() {
 	glGenTextures(1, &pickingTexture);
 	glBindTexture(GL_TEXTURE_2D, pickingTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB_FLOAT32_ATI, 1024, 1024,
-		0, GL_RGB, GL_FLOAT, NULL);
+				 0, GL_RGB, GL_FLOAT, NULL);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-		pickingTexture, 0);
+						    pickingTexture, 0);
 
 	//glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, wandShadowMap, 0);
 	//glDrawBuffer(GL_NONE);
@@ -743,9 +743,9 @@ int Oculus::runOvr() {
 	GLint locationSSAO_P = glGetUniformLocation(ssaoShader.programID, "P"); //perspective matrix
 	GLint locationSSAO_MV = glGetUniformLocation(ssaoShader.programID, "MV"); //texcoords
 	GLint locationSSAO_kernelSize = glGetUniformLocation(ssaoShader.programID, "kernelSize"); //modelview matrix
-	GLint locationSSAO_sampleKernel = glGetUniformLocation(ssaoShader.programID, "sampleKernel"); 
+	GLint locationSSAO_sampleTex = glGetUniformLocation(ssaoShader.programID, "sampleTex"); 
 	GLint locationSSAO_depthTex = glGetUniformLocation(ssaoShader.programID, "depth_tex"); //texcoords
-	GLint locationSSAO_noiseKernel = glGetUniformLocation(ssaoShader.programID, "noiseKernel"); //texcoords
+	GLint locationSSAO_noiseTex = glGetUniformLocation(ssaoShader.programID, "noiseTex"); //texcoords
 	GLint locationSSAO_noiseScale = glGetUniformLocation(ssaoShader.programID, "noiseScale"); //texcoords
 
 	// SSAO Variables \____________________________________________________________________________________________________________________
@@ -764,30 +764,49 @@ int Oculus::runOvr() {
 		ssao_kernel[i] *= lerp(0.1f, 1.0f, ssao_scale * ssao_scale);
 	}
 
-	
+	glUniform3fv(locationSSAO_sampleKernel, KERNEL_SIZE, (float*)ssao_kernel);
+	glUniform1ui(locationSSAO_kernelSize, KERNEL_SIZE);
+	delete[] ssao_kernel;
+
 	// Generate the SSAO noise kernel >-----------------------------------------------------------------------------------------------------------
 
 	const int NOISE_SIZE = 3;
 	int noiseDataSize = NOISE_SIZE * NOISE_SIZE;
-	glm::vec3* ssao_noise = new glm::vec3[noiseDataSize];
+	float* ssao_noise = new float[noiseDataSize];
+	float tempF;
 
-	for (int i = 0; i < noiseDataSize; i++) {
-		ssao_noise[i] = glm::vec3(random(-1.0f, 1.0f),
-			random(-1.0f, 1.0f),
-			0.0f);
+	for (int i = 0; i + 2 < noiseDataSize; i = i + 3) {
+		ssao_noise[i] = random(-1.0f, 1.0f);
+		ssao_noise[i + 1] = random(-1.0f, 1.0f);
+		ssao_noise[i + 2] = 0.0f;
 
-		glm::normalize(ssao_noise[i]);
+		// normalize
+		tempF = sqrt(pow(ssao_noise[i], 2) + pow(ssao_noise[i + 1], 2) + pow(ssao_noise[i + 2], 2));
+		
+		if (tempF != 0) {
+			ssao_noise[i] = ssao_noise[i] / tempF;
+			ssao_noise[i + 1] = ssao_noise[i + 1] / tempF;
+			ssao_noise[i + 2] = ssao_noise[i + 2] / tempF;
+		}
 	}
 
-	float noiseScale[2]; noiseScale[0] = windowSize.w / NOISE_SIZE; noiseScale[1] =	windowSize.h / NOISE_SIZE;
+	// load the data as texture to the shader and clean up
+	GLuint noiseTexture;
+	glGenTextures(1, &noiseTexture);
+	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, NOISE_SIZE, NOISE_SIZE,
+				 0, GL_RGB, GL_FLOAT, ssao_noise);
 
-	glUniform3fv(locationSSAO_noiseKernel, noiseDataSize, (float*)ssao_noise);
-	glUniform3fv(locationSSAO_sampleKernel, KERNEL_SIZE, (float*)ssao_kernel);
-	glUniform2fv(locationSSAO_noiseScale, 1, noiseScale);
-	glUniform1ui(locationSSAO_kernelSize, KERNEL_SIZE);
+	//bind the texture
+	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+	glUniform1i(locationSSAO_noiseTex, 0);
 
-	delete[] ssao_kernel;
 	delete[] ssao_noise;
+
+	float noiseScale[2]; noiseScale[0] = windowSize.w / NOISE_SIZE; noiseScale[1] =	windowSize.h / NOISE_SIZE;
+	//glUniform3fv(locationSSAO_noiseKernel, noiseDataSize, (float*)ssao_noise);
+	glUniform2fv(locationSSAO_noiseScale, 1, noiseScale);
+	
 
 	// 2.7 - Scene objects and variables \___________________________________________________________________________________________________
 

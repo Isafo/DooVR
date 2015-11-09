@@ -6,8 +6,7 @@ in vec2 ssao_uv;
 in mat4 projMat;
 
 uniform sampler2D depth_tex;
-//uniform sampler2D normal_tex;
-//uniform sampler2D noise_tex;
+uniform sampler2D noise_tex;
 
 // ssao Uniforms
 const int MAX_KERNEL_SIZE = 16;
@@ -16,7 +15,6 @@ uniform float Radius = 1.5;
 uniform float power = 2.0;
 uniform vec2 noiseScale; // scale to fit the ssao tex coords to the noise kernel
 uniform vec3 sampleKernel[MAX_KERNEL_SIZE];
-uniform mat4 noiseKernel[MAX_KERNEL_SIZE];
 
 layout(location=0) out vec4 result;
 
@@ -62,8 +60,7 @@ void main () {
 	viewPos /= viewPos.w;
 
 	// calculate the change-of-bias mat
-	vec3 rotVec = noiseKernel[ssao_uv] * noiseScale) * 2.0 - 1.0;
-	//vec3 rotVec = texture(noise_tex, ssao_uv * noiseScale).xyz * 2.0 - 1.0;
+	vec3 rotVec = texture(noise_tex, ssao_uv * noiseScale).xyz * 2.0 - 1.0;
 	vec3 tangent = normalize(rotVec - viewNormal * dot(rotVec, viewNormal));
 	vec3 bitangent = cross(viewNormal, tangent);
 	mat3 tbn = mat3(tangent, bitangent, viewNormal);
