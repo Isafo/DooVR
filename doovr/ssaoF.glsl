@@ -16,7 +16,7 @@ uniform float power = 2.0;
 uniform vec2 noiseScale; // scale to fit the ssao tex coords to the noise kernel
 uniform vec3 sampleKernel[MAX_KERNEL_SIZE];
 
-layout(location=0) out vec4 result;
+out vec4 result;
 
 float ssao(mat3 kernelBasis, vec3 origin, float radius) {
 	

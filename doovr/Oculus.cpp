@@ -209,8 +209,6 @@ struct TextureBuffer
 };
 
 // ------- Function declerations --------
-//! Sets up a glfw window depending on the resolution of the Oculus Rift device
-static void WindowSizeCallback(GLFWwindow *p_Window, int p_Width, int p_Height);
 //! checks if the wand is colliding with a menuItem and sets the menuItems state accordingly, returns true if a menuItem choise has occured
 int handleMenu(float* wandPosition, menuBox** menuItem, const int nrOfModellingUIButtons, int* state);
 void GLRenderCallsOculus();
@@ -422,15 +420,17 @@ int Oculus::runOvr() {
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	// SSAO depth FBO \_____________________________________________________________________________________________________________________
-	// create and set up the FBO
-	GLuint ssaoFBO;
-	glGenFramebuffers(2, &ssaoFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
 
-	GLuint ssaoDepthTex;
-	glGenTextures(1, &ssaoDepthTex);
-	glBindTexture(GL_TEXTURE_2D, ssaoDepthTex);
+
+	// Oculus depth FBO \_____________________________________________________________________________________________________________________
+	// create and set up the FBO
+	GLuint oculusDepthFBO;
+	glGenFramebuffers(1, &oculusDepthFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, oculusDepthFBO);
+
+	GLuint oculusDepthTex;
+	glGenTextures(1, &oculusDepthTex);
+	glBindTexture(GL_TEXTURE_2D, oculusDepthTex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -440,12 +440,11 @@ int Oculus::runOvr() {
 
 	//Assign the shadow map to texture channel 0 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, ssaoDepthTex);
+	glBindTexture(GL_TEXTURE_2D, oculusDepthTex);
 
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ssaoDepthTex, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, oculusDepthTex, 0);
 
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
+	//glDrawBuffer(GL_NONE);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -456,8 +455,39 @@ int Oculus::runOvr() {
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	// ssao FBO \_____________________________________________________________________________________________________________________
+	// create and set up the FBO
+	GLuint ssaoFBO;
+	glGenFramebuffers(1, &ssaoFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
 
-	glfwSetWindowSizeCallback(l_Window, WindowSizeCallback);
+	GLuint ssaoTex;
+	glGenTextures(1, &ssaoTex);
+	glBindTexture(GL_TEXTURE_2D, ssaoTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+
+	//Assign the shadow map to texture channel 0 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, ssaoTex);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ssaoTex, 0);
+
+	//glDrawBuffer(GL_NONE);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+	if (Status != GL_FRAMEBUFFER_COMPLETE) {
+		printf("FB error, status: 0x%x\n", Status);
+		return false;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 
 	//=====================================================================================================================================
 	// 2 - Variable Declarations
@@ -743,7 +773,7 @@ int Oculus::runOvr() {
 	GLint locationSSAO_P = glGetUniformLocation(ssaoShader.programID, "P"); //perspective matrix
 	GLint locationSSAO_MV = glGetUniformLocation(ssaoShader.programID, "MV"); //texcoords
 	GLint locationSSAO_kernelSize = glGetUniformLocation(ssaoShader.programID, "kernelSize"); //modelview matrix
-	GLint locationSSAO_sampleTex = glGetUniformLocation(ssaoShader.programID, "sampleTex"); 
+	GLint locationSSAO_sampleKernel = glGetUniformLocation(ssaoShader.programID, "sampleKernel");
 	GLint locationSSAO_depthTex = glGetUniformLocation(ssaoShader.programID, "depth_tex"); //texcoords
 	GLint locationSSAO_noiseTex = glGetUniformLocation(ssaoShader.programID, "noiseTex"); //texcoords
 	GLint locationSSAO_noiseScale = glGetUniformLocation(ssaoShader.programID, "noiseScale"); //texcoords
@@ -1139,7 +1169,7 @@ int Oculus::runOvr() {
 				}
 			}
 
-			//wandViewMAP -------------------------------------------
+			//wandViewMAP \________________________________________________________________________________________________________________________________________
 			glViewport(0, 0, 1024, 1024);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, wandViewFBO);
 			glClear(GL_DEPTH_BUFFER_BIT);
@@ -1170,16 +1200,8 @@ int Oculus::runOvr() {
 				MVstack.pop();
 			MVstack.pop();
 
-			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-			//glBindFramebuffer(GL_READ_FRAMEBUFFER, wandViewFBO);
-			//glReadBuffer(GL_COLOR_ATTACHMENT0);
-
 			glReadBuffer(GL_NONE);
-			//glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-			//currentTool->findIntersection(modellingMesh, wand, Pixel);
 			currentTool->getIntersection(intersectionP, intersectionN);
-			//linAlg::normVec(intersectionN);
 
 			glm::vec3 interP = glm::vec3(intersectionP[0], intersectionP[1], intersectionP[2]);
 			wand->getDirection(tempVec);
@@ -1206,21 +1228,16 @@ int Oculus::runOvr() {
 			ovr_CalcEyePoses(hmdState.HeadPose.ThePose, ViewOffset, EyeRenderPose);
 
 
-			GLRenderCallsOculus();
+			
 
 			for (int l_EyeIndex = 0; l_EyeIndex < ovrEye_Count; l_EyeIndex++) {
-				// Increment to use next texture, just before writing
-				eyeRenderTexture[l_EyeIndex]->TextureSet->CurrentIndex = (eyeRenderTexture[l_EyeIndex]->TextureSet->CurrentIndex + 1) % eyeRenderTexture[l_EyeIndex]->TextureSet->TextureCount;
-
-				// Switch to eye render target
-				eyeRenderTexture[l_EyeIndex]->SetAndClearRenderSurface(eyeDepthBuffer[l_EyeIndex]);
-
-				// SSAO depth map \_____________________________________________________________________________________________________________________
+				
+				// SSAO \_____________________________________________________________________________________________________________________
 				glViewport(0, 0, 1024, 1024);
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ssaoFBO);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oculusDepthFBO);
 				glClear(GL_DEPTH_BUFFER_BIT);
-				glUseProgram(ssaoShader.programID);
-
+				glUseProgram(depthMap.programID);
+				
 				//glUniformMatrix4fv(locationP, 1, GL_FALSE, &(g_ProjectionMatrix[0].Transposed().M[0][0]));
 				MVstack.push();
 
@@ -1230,7 +1247,7 @@ int Oculus::runOvr() {
 					OVR::Quatf l_Orientation = OVR::Quatf(EyeRenderPose[l_EyeIndex].Orientation);
 					OVR::Matrix4f l_ModelViewMatrix = OVR::Matrix4f(l_Orientation.Inverted());
 					MVstack.multiply(&(l_ModelViewMatrix.Transposed().M[0][0]));
-					
+
 					//!-- Translation due to positional tracking (DK2) and IPD...
 					float eyePoses[3] = { -EyeRenderPose[l_EyeIndex].Position.x, -EyeRenderPose[l_EyeIndex].Position.y, -EyeRenderPose[l_EyeIndex].Position.z };
 					MVstack.translate(eyePoses);
@@ -1242,9 +1259,25 @@ int Oculus::runOvr() {
 						modellingMesh->render();
 					MVstack.pop();
 				MVstack.pop();
+				
+				glViewport(0, 0, 1024, 1024);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ssaoFBO);
+				glClear(GL_DEPTH_BUFFER_BIT);
+				glUseProgram(ssaoShader.programID);
 
-				glReadBuffer(GL_NONE);
+				glBindTexture(GL_TEXTURE_2D, oculusDepthTex);
+				glUniform1i(locationSSAO_depthTex, 0);
 
+				
+				// Render to Oculus \_________________________________________________________________________________________________________
+
+				// Increment to use next texture, just before writing
+				eyeRenderTexture[l_EyeIndex]->TextureSet->CurrentIndex = (eyeRenderTexture[l_EyeIndex]->TextureSet->CurrentIndex + 1) % eyeRenderTexture[l_EyeIndex]->TextureSet->TextureCount;
+
+				// Switch to eye render target
+				eyeRenderTexture[l_EyeIndex]->SetAndClearRenderSurface(eyeDepthBuffer[l_EyeIndex]);
+
+				GLRenderCallsOculus();
 				// 3.3 OCULUS/CAMERA TRANSFORMS \______________________________________________________________________________________________
 				MVstack.push();
 				glUseProgram(sceneShader.programID);
@@ -1284,10 +1317,10 @@ int Oculus::runOvr() {
 
 				glUniform4fv(locationLP, 1, LP);
 				MVstack.push();
-				MVstack.translate(board.getPosition());
-				glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
-				glBindTexture(GL_TEXTURE_2D, greyTex.getTextureID());
-				board.render();
+					MVstack.translate(board.getPosition());
+					glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
+					glBindTexture(GL_TEXTURE_2D, greyTex.getTextureID());
+					board.render();
 				MVstack.pop();
 
 				// Render Ground >----------------------------------------------------------------------------------------------------------------
@@ -1451,7 +1484,7 @@ int Oculus::runOvr() {
 					glBindTexture(GL_TEXTURE_2D, wandShadowMap);
 					glUniform1i(locationMeshDTex, 0);
 
-					glBindTexture(GL_TEXTURE_2D, ssaoDepthTex);
+					glBindTexture(GL_TEXTURE_2D, ssaoTex);
 					glUniform1i(locationMesh_SSAOTex, 0);
 
 					MVstack.push();
@@ -2244,8 +2277,8 @@ int Oculus::runOvr() {
 		GLint w = mirrorTexture->OGL.Header.TextureSize.w;
 		GLint h = mirrorTexture->OGL.Header.TextureSize.h;
 		glBlitFramebuffer(0, h, w, 0,
-			0, 0, w, h,
-			GL_COLOR_BUFFER_BIT, GL_NEAREST);
+						  0, 0, w, h,
+						  GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
 		glfwSwapBuffers(l_Window);
@@ -2277,19 +2310,6 @@ int Oculus::runOvr() {
 	ovr_Shutdown();
 
 	return 1;
-}
-
-static void WindowSizeCallback(GLFWwindow* p_Window, int p_Width, int p_Height) {
-	/*if (p_Width>0 && p_Height>0) {
-	g_Cfg.OGL.Header.BackBufferSize.w = p_Width;
-	g_Cfg.OGL.Header.BackBufferSize.h = p_Height;
-
-	ovrBool l_ConfigureResult = ovrHmd_ConfigureRendering(hmd, &g_Cfg.Config, G_DISTORTIONCAPS, hmd->MaxEyeFov, g_EyeRenderDesc);
-	if (!l_ConfigureResult) {
-	printf("Configure failed.\n");
-	exit(EXIT_FAILURE);
-	}
-	}*/
 }
 
 void GLRenderCallsOculus(){

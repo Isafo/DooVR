@@ -19,24 +19,24 @@ uniform float Radius;
 float blurSSAO() {
 	vec2 texelSize = 1.0 / vec2(textureSize(ssao_tex, 0));
 	float result = 0.0;
-
+	
 	vec2 hlim = vec2(float(-blurSize) * 0.5 + 0.5);
-
-	for ( int i = 0; i < blurSize; i++) {
-		for (int j = 0; j < blurSize; i++) {
+	/*
+	for ( int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; i++) {
 			vec2 offset = (hlim + vec2(float(i), float(j))) * texelSize;
 			result += texture(ssao_tex, uv.st + offset).r;
 		}
-	}
+	}*/
 
 	result = result / float(blurSize * blurSize);
-	return result;
+	return 1.0f;
 }
 
 
 void main () {
 
-	float occlusion = blurSSAO();
+	float occlusion = texture(ssao_tex, uv).r;
 
 	vec3 LightIntensity;
 
