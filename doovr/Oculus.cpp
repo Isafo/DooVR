@@ -1236,12 +1236,13 @@ int Oculus::runOvr() {
 				glViewport(0, 0, 1024, 1024);
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oculusDepthFBO);
 				glClear(GL_DEPTH_BUFFER_BIT);
-				glUseProgram(depthMap.programID);
+				glUseProgram(projectionShader.programID);
 				
 				//glUniformMatrix4fv(locationP, 1, GL_FALSE, &(g_ProjectionMatrix[0].Transposed().M[0][0]));
 				MVstack.push();
 
 					glUniformMatrix4fv(locationSSAO_P, 1, GL_FALSE, &(oProjectionMatrix[l_EyeIndex].Transposed().M[0][0]));
+					glUniformMatrix4fv(locationProjP, 1, GL_FALSE, &(oProjectionMatrix[l_EyeIndex].Transposed().M[0][0]));
 
 					// Multiply with orientation retrieved from sensor...
 					OVR::Quatf l_Orientation = OVR::Quatf(EyeRenderPose[l_EyeIndex].Orientation);
@@ -1256,6 +1257,7 @@ int Oculus::runOvr() {
 						MVstack.translate(modellingMesh->getPosition());
 						MVstack.multiply(modellingMesh->getOrientation());
 						glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
+						glUniformMatrix4fv(locationProjMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
 						modellingMesh->render();
 					MVstack.pop();
 				MVstack.pop();

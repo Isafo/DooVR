@@ -36,18 +36,18 @@ float blurSSAO() {
 
 void main () {
 
-	float occlusion = texture(ssao_tex, uv).r;
+	float occlusion = texture(ssao_tex, uv.xy).r;
 
 	vec3 LightIntensity;
 
-	if( ( (uv.z > Radius) && (uv.z < Radius + 0.001f) && texture( dTex, shadowUV.xy ).z  >  shadowUV.z - 0.001) && (uv.w < Radius + 0.001f) && (uv.w > -(Radius + 0.001f)) ){	
+	if( ( (uv.z > Radius) && (uv.z < Radius + 0.001f) && texture( dTex, shadowUV.xy ).z  >  shadowUV.z - 0.001) && (uv.w < Radius + 0.001f) && (uv.w > -(Radius + 0.001f)) ) {	
 		LightIntensity = vec3(1.0f, 1.0f, 1.0f);
 	} 
-	else if ( ( (uv.w < -Radius) && (uv.w > -(Radius + 0.001f)) || (uv.w > Radius) && (uv.w < Radius + 0.001f) ) && (uv.z < Radius))  {
+	else if ( ( (uv.w < -Radius) && (uv.w > -(Radius + 0.001f)) || (uv.w > Radius) && (uv.w < Radius + 0.001f) ) && (uv.z < Radius)) {
 		LightIntensity = vec3(1.0f, 1.0f, 1.0f);
 	}
 	else {
-		LightIntensity = vec3(0.3f, 0.02f, 0.0f) * occlusion;
+		LightIntensity = vec3(0.3f, 0.02f, 0.0f) * occlusion * 0.5;
 	}
 	
 	vec3 Kd = vec3(0.7f, 0.7f, 0.7f);                // Diffuse reflectivity
