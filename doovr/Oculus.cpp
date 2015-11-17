@@ -477,6 +477,13 @@ int Oculus::runOvr() {
 	float wandPos[3];
 	float wandVelocity[3] = { 0 };
 
+	float hmdPos[3] = { 0.0f, 0.0f, 0.0f };
+	float hmdVel[3] = { 0.0f, 0.0f, 0.0f };
+	float hmdAcc[3] = { 0.0f, 0.0f, 0.0f };
+	float hmdF[3] = { 0.0f, 0.0f, 0.0f };
+
+	float eyePoses[3];
+
 	float currTime = 0;
 	float lastTime;
 	float deltaTime;
@@ -767,8 +774,54 @@ int Oculus::runOvr() {
 
 			// 3.1 - modellingstates \_____________________________________________________________________________________________________
 			//3.1.1 - use modellingtool >--------------------------------------------------------------------------------------------------
-
 			if (glfwGetKey(l_Window, GLFW_KEY_PAGE_UP)) {
+				if (modellingState[0] == 2) {
+					//wand->getDirection(hmdF);
+					//linAlg::normVec(hmdF);
+
+					wand->getPosition(wandPos);
+					linAlg::calculateVec(wandPos, lastPos, hmdF);
+
+					hmdAcc[0] = 2*hmdF[0] - 2.0f*hmdVel[0];
+					hmdAcc[1] = 2*hmdF[1] - 2.0f*hmdVel[1];
+					hmdAcc[2] = 2*hmdF[2] - 2.0f*hmdVel[2];
+				}
+				else if (modellingState[0] == 1) {
+					modellingState[0] = 2;
+					wand->getPosition(lastPos);
+
+				}
+				else if (modellingState[0] == 0)
+				{
+					modellingState[0] = 1;
+				}
+			}
+			else {
+				if (modellingState[0] == 3) {
+					modellingState[0] = 0;
+				}
+				else if (modellingState[0] != 0) {
+					modellingState[0] = 3;
+				}
+				
+				linAlg::vecLength(hmdVel);
+
+				hmdAcc[0] = -2.0f*hmdVel[0];
+				hmdAcc[1] = -2.0f*hmdVel[1];
+				hmdAcc[2] = -2.0f*hmdVel[2];
+			}
+
+			hmdVel[0] = hmdVel[0] + hmdAcc[0] * deltaTime;
+			hmdVel[1] = hmdVel[1] + hmdAcc[1] * deltaTime;
+			hmdVel[2] = hmdVel[2] + hmdAcc[2] * deltaTime;
+
+			hmdPos[0] = hmdPos[0] + hmdVel[0] * deltaTime;
+			hmdPos[1] = hmdPos[1] + hmdVel[1] * deltaTime;
+			hmdPos[2] = hmdPos[2] + hmdVel[2] * deltaTime;
+
+
+
+			/*if (glfwGetKey(l_Window, GLFW_KEY_PAGE_UP)) {
 				if (modellingState[0] == 2) {
 					currentTool->moveVertices(modellingMesh, wand, deltaTime);
 
@@ -796,7 +849,7 @@ int Oculus::runOvr() {
 				}
 				currentTool->deSelect();
 				currentTool->firstSelect(modellingMesh, wand);
-			}
+			}*/
 
 			//3.1.2 - move mesh >-----------------------------------------------------------------------------------------------------------
 
@@ -1149,8 +1202,15 @@ int Oculus::runOvr() {
 				//MVstack.multiply(wand->getOrientation());
 
 				//!-- Translation due to positional tracking (DK2) and IPD...
-				float eyePoses[3] = { -EyeRenderPose[l_EyeIndex].Position.x, -EyeRenderPose[l_EyeIndex].Position.y, -EyeRenderPose[l_EyeIndex].Position.z };
+				eyePoses[0] = -EyeRenderPose[l_EyeIndex].Position.x;
+				eyePoses[1] = -EyeRenderPose[l_EyeIndex].Position.y;
+				eyePoses[2] = -EyeRenderPose[l_EyeIndex].Position.z;
 				MVstack.translate(eyePoses);
+
+
+
+				tempVec[0] = -hmdPos[0]; tempVec[1] = -hmdPos[1]; tempVec[2] = -hmdPos[2];
+				MVstack.translate(tempVec);
 				//wand->getPosition(tempVec);
 				//tempVec[0] = -tempVec[0]; tempVec[1] = -tempVec[1]; tempVec[2] = -tempVec[2];
 				//MVstack.translate(tempVec);
@@ -1358,39 +1418,41 @@ int Oculus::runOvr() {
 				glUniformMatrix4fv(locationP, 1, GL_FALSE, &(oProjectionMatrix[l_EyeIndex].Transposed().M[0][0]));
 				// 3.4.6 Render wand >-------------------------------------------------------------------------------------------
 				MVstack.push();
-				MVstack.translate(wandPos);
-				MVstack.multiply(wand->getOrientation());
+				MVstack.translate(hmdPos);
+					MVstack.push();
+						MVstack.translate(wandPos);
+						MVstack.multiply(wand->getOrientation());
 
 
-				glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
-				MVstack.push();
-				translateVector[0] = 0.0f;
-				translateVector[1] = 0.0f;
-				translateVector[2] = -0.1f;
-				MVstack.translate(translateVector);
-				glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
+						glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
+						MVstack.push();
+							translateVector[0] = 0.0f;
+							translateVector[1] = 0.0f;
+							translateVector[2] = -0.1f;
+							MVstack.translate(translateVector);
+							glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
 
-				boxWand.render();
+							boxWand.render();
+						MVstack.pop();
+
+
+					//render brush------------------------
+						currentTool->render(MVptr, locationMV);
+					MVstack.pop();
+
+					if (modellingState[0] == 2)
+					{
+
+						MVstack.push();
+						MVstack.translate(lastPos);
+
+						glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
+						modellingButton[4]->render();
+						MVstack.pop();
+
+					}
 				MVstack.pop();
-				//render brush------------------------
 
-				/*MVstack.push();
-				translateVector[0] = 0.0f;
-				translateVector[1] = 0.0f;
-				translateVector[2] = 1.0f;
-				MVstack.translate(translateVector);
-				glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
-				brushPointer.render();
-				MVstack.pop();
-
-				MVstack.push();
-				MVstack.scale(wandRadius);
-				MVstack.translate(brush.getPosition());
-				glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
-				brush.render();
-				MVstack.pop();*/
-				currentTool->render(MVptr, locationMV);
-				MVstack.pop();
 
 				glUseProgram(bloomShader.programID);
 
