@@ -776,6 +776,8 @@ int Oculus::runOvr() {
 			//3.1.1 - use modellingtool >--------------------------------------------------------------------------------------------------
 			if (glfwGetKey(l_Window, GLFW_KEY_PAGE_UP)) {
 				if (modellingState[0] == 2) {
+
+
 					//wand->getDirection(hmdF);
 					//linAlg::normVec(hmdF);
 
@@ -1232,10 +1234,10 @@ int Oculus::runOvr() {
 
 				glUniform4fv(locationLP, 1, LP);
 				MVstack.push();
-				MVstack.translate(board.getPosition());
-				glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
-				glBindTexture(GL_TEXTURE_2D, greyTex.getTextureID());
-				board.render();
+					MVstack.translate(board.getPosition());
+					glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
+					glBindTexture(GL_TEXTURE_2D, greyTex.getTextureID());
+					board.render();
 				MVstack.pop();
 
 				// Render Ground >----------------------------------------------------------------------------------------------------------------
@@ -1254,11 +1256,24 @@ int Oculus::runOvr() {
 				glUniformMatrix4fv(locationP, 1, GL_FALSE, &(oProjectionMatrix[l_EyeIndex].Transposed().M[0][0]));
 
 				MVstack.push();
-				MVstack.translate(title.getPosition());
-				MVstack.rotX(1.57079f);
-				glBindTexture(GL_TEXTURE_2D, titleTex.getTextureID());
-				glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
-				title.render();
+					MVstack.translate(title.getPosition());
+
+					MVstack.push();	
+						translateVector[0] = 0.1f;
+						translateVector[1] = 0.1f;
+						translateVector[2] = 0.1f;
+						MVstack.rotY(currTime);
+						MVstack.translate(translateVector);
+						glBindTexture(GL_TEXTURE_2D, modellingButtonTex->getTextureID());
+						glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
+						modellingButton[1]->render();
+					MVstack.pop();
+
+					glBindTexture(GL_TEXTURE_2D, titleTex.getTextureID());
+					MVstack.rotX(1.57079f);
+					glUniformMatrix4fv(locationMV, 1, GL_FALSE, MVstack.getCurrentMatrix());
+					title.render();
+
 				MVstack.pop();
 
 
