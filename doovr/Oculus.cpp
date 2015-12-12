@@ -780,8 +780,6 @@ int Oculus::runOvr() {
 			// 3 - Modelling Mode
 			//===============================================================================================================================
 		case 0: {
-
-
 			// 3.1 - modellingstates \_____________________________________________________________________________________________________
 			//3.1.1 - use modellingtool >--------------------------------------------------------------------------------------------------
 
@@ -795,8 +793,7 @@ int Oculus::runOvr() {
 					//currentTool->deSelect();
 					//currentTool->firstSelect(modellingMesh, wand);
 				}
-				else if (modellingState[0] == 0)
-				{
+				else if (modellingState[0] == 0) {
 					modellingState[0] = 1;
 
 					aModellingStateIsActive++;
@@ -890,7 +887,6 @@ int Oculus::runOvr() {
 						modellingButton[activeButton]->setState(true);
 
 						reset = true;
-
 					}
 					else if (modellingButtonState[activeButton] == 3) {
 						modellingButton[activeButton]->setState(false);
@@ -1681,7 +1677,7 @@ int Oculus::runOvr() {
 				case 0: {
 					// load mesh button
 					if (loadButtonState[activeButton] == 1) {
-						if (th2Status == 0){
+						if (th2Status == 0) {
 							th2Status = 1;
 							th2 = std::thread(loadMesh, modellingMesh, meshFile[fileIndex % meshFile.size()]);
 							currentMesh = meshFile[fileIndex % meshFile.size()];
@@ -2187,16 +2183,24 @@ int Oculus::runOvr() {
 	ovr_Destroy(HMD);
 	ovr_Shutdown();
 
+
+	// clean up stuff created with new
 	//delete eyeRenderTexture[0]; delete eyeRenderTexture[1];
 	//delete eyeDepthBuffer[0]; delete eyeDepthBuffer[1];
 
-	/*for (int i = 0; i < NR_OF_MODELLING_BUTTONS; i++)
+	for (int i = 0; i < NR_OF_MODELLING_BUTTONS; i++)
 		delete modellingButton[i];
 
 	delete modellingButtonFrame;
 
 	for (int i = 0; i < 3; i++)
-		delete modellingButtonString[i];*/
+		delete modellingButtonString[i];
+	
+	delete currentSTool;
+	delete wand;
+	delete oTest;
+	delete modellingMesh;
+	
 	
 	return 1;
 }

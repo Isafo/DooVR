@@ -79,8 +79,7 @@ void Passive3D::wand3dCallback(WandData data) {
 	Direction[2] = -data.orientation[2];
 }
 
-void Passive3D::calibrate()
-{
+void Passive3D::calibrate() {
 	wand->reCalibrate();
 }
 
