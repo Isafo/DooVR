@@ -1,11 +1,6 @@
 # DooVR
-  Modelling application using Oculus Rift and Sixense STEM
-
-## Documentation
-  Documentation is available [here](http://grahnen92.github.io/DooVR/)
-
-## Requierments
-The project depends on
-* GLEW
-* GLFW
-* libOVR
+  Modelling application for virtual reality.
+  
+  The mesh is a halfedge mesh that is retriangulated using vertex splits and edge collapses.
+  
+  Project page: [http://isafo.github.io/DooVR_showcase/](http://isafo.github.io/DooVR_showcase/)
