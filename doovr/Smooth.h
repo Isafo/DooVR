@@ -42,14 +42,10 @@ private:
 	int previouslySelectedSize;
 
 	vertex* mVertexArray;
-	halfEdge* mEdgeArray;
 	vInfo* mVInfoArray;
+	halfEdge* mEdgeArray;
 	float* mPosition;
 	float* mOrientation;
-
-	float* wPosition;
-	float* wDirection;
-	float* wOrientation;
 
 	float mMAX_LENGTH;
 
@@ -57,6 +53,6 @@ private:
 	float zVec[3];
 	float iTransform[16];
 
-	float counter = 0.0f;
+	float counter;
 };
 

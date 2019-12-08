@@ -1,6 +1,6 @@
 //! Namespace that handles necassary includes and various functions
 #pragma once
-
+#define GLEW_NO_GLU
 #include "GL/glew.h"
 
 #include <Windows.h>

@@ -4,27 +4,31 @@
 #define EPSILON 0.000001
 
 Smooth::Smooth(DynamicMesh* mesh, Wand* wand)
+	: Tool(),
+	radius(0.01f),
+	strength(0.0f),
+	pointer(new Line(0.0f, 0.0f, 0.0f, 0.1f)),
+	lineOffset {0.0f, 0.0f, 0.1f},
+	iCircle(new Circle(0.0f, 0.0f, 0.0f, 1.0f)),
+	intersection {},
+	previouslySelectedVertices(new int[MAX_SELECTED]),
+	previouslySelectedSize(0),
+	mVertexArray(mesh->vertexArray),
+	mVInfoArray(mesh->vInfoArray),
+	mEdgeArray(mesh->e),
+	mPosition(mesh->position),
+	mOrientation(mesh->orientation),
+	mMAX_LENGTH(mesh->MAX_LENGTH),
+	tempVec{ 0.0f, 0.0f, 0.0f },
+	zVec{ 0.0f, 0.0f, 1.0f },
+	iTransform{ 1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f, },
+	counter(0)
 {
-	selectedVertices = new int[MAX_SELECTED]; selectedSize = 0;
-	previouslySelectedVertices = new int[MAX_SELECTED]; previouslySelectedSize = 0;
-
-	radius = 0.01f;
+	selectedVertices = new int[MAX_SELECTED];
 	toolBrush = new Circle(0.0f, 0.0f, 0.0f, 1.0f);
-	pointer = new Line(0.0f, 0.0f, 0.0f, 0.1f);
-	iCircle = new Circle(0.0f, 0.0f, 0.0f, 1.0f);
-
-	lineOffset[0] = 0.0f;
-	lineOffset[1] = 0.0f;
-	lineOffset[2] = 0.1f;
-
-	mVertexArray = mesh->vertexArray;
-	mVInfoArray = mesh->vInfoArray;
-	mEdgeArray = mesh->e;
-	mPosition = mesh->position;
-	mOrientation = mesh->orientation;
-	mMAX_LENGTH = mesh->MAX_LENGTH;
-
-	zVec[0] = 0.0f;  zVec[1] = 0.0f; zVec[2] = 1.0f;
 }
 
 
@@ -80,9 +84,8 @@ void Smooth::firstSelect(DynamicMesh* mesh, Wand* wand)
 	float wPoint[4]; float newWPoint[4]; float Dirr[4]; float newDirr[4];
 	float eVec1[3]; float eVec2[3];
 	float P[3]; float Q[3]; float T[3];
-	float* vPoint; float* vPoint2; float vNorm[3]; float* vNorm2;
+	float* vPoint; float vNorm[3];
 	int index; int index2;
-	float* ptrVec;
 
 	int tempEdge; int tempE;
 
@@ -93,7 +96,7 @@ void Smooth::firstSelect(DynamicMesh* mesh, Wand* wand)
 	float pLength = 0.0f; float invP = 0.0f; float u = 0.0f; float v = 0.0f; float t = 0.0f;
 	float oLength = 0.0f;
 
-	int mIndex; float mLength;
+	int mIndex;
 
 	intersection.nxyz[0] = 100.f; intersection.nxyz[1] = 100.f; intersection.nxyz[2] = 100.f;
 	//sIt = sHead->next;
@@ -267,9 +270,8 @@ void Smooth::moveVertices(DynamicMesh* mesh, Wand* wand, float dT)
 	float wPoint[4]; float newWPoint[4]; float Dirr[4]; float newDirr[4];
 	float eVec1[3]; float eVec2[3];
 	float P[3]; float Q[3]; float T[3]; float lengthVec[3];
-	float* vPoint; float* vPoint2; float* vPoint1; float vNorm[3]; float* vNorm2;
+	float* vPoint; float* vPoint2; float vNorm[3];
 	int index; int index2;
-	float* ptrVec;
 
 	float tempVec1[3];
 	int tempEdge; int tempE;
@@ -284,7 +286,7 @@ void Smooth::moveVertices(DynamicMesh* mesh, Wand* wand, float dT)
 	float pLength = 0.0f; float invP = 0.0f; float u = 0.0f; float v = 0.0f; float t = 0.0f;
 	float oLength = 0.0f;
 
-	int mIndex; float mLength;
+	int mIndex;
 
 	//int tempSize;
 
@@ -388,7 +390,7 @@ void Smooth::moveVertices(DynamicMesh* mesh, Wand* wand, float dT)
 	intersection.nxyz[2] = vNorm[2];
 
 	tempSize = selectedSize;
-	selectedSize = 0.0f;
+	selectedSize = 0;
 	for (int i = 0; i < tempSize; i++) {
 		index2 = selectedVertices[i];
 

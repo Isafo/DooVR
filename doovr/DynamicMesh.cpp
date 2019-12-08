@@ -9,15 +9,34 @@
 
 #define M_PI 3.14159265358979323846
 #define EPSILON 0.000001
+#define MAX_VERTEX_COUNT 1000000
+#define MAX_TRIANGLE_COUNT 2 * MAX_VERTEX_COUNT
+#define MAX_EDGE_COUNT 3 * MAX_VERTEX_COUNT 
 
-DynamicMesh::DynamicMesh() {
-	vertexArray = new vertex[MAX_NR_OF_VERTICES];
-	vInfoArray = new vInfo[MAX_NR_OF_VERTICES];
 
-	triangleArray = new triangle[MAX_NR_OF_TRIANGLES];
-	triEPtr = new int[MAX_NR_OF_TRIANGLES];
+DynamicMesh::DynamicMesh()
+	: emptyV(0),
+	emptyT(0),
+	emptyE(0),
+	vertexCap(0),
+	triangleCap(0),
+	vertexRange(0),
+	triangleRange(0),
+	triEPtr(0),
+	nrofEdges(0),
+	edgeCap(0),
+	HNR(0),
+	CNR(0),
+	MAX_LENGTH(0.025f * 0.2f),
+	MIN_LENGTH(0.0124f * 0.2f)
+ {
+	vertexArray = new vertex[MAX_VERTEX_COUNT];
+	vInfoArray = new vInfo[MAX_VERTEX_COUNT];
 
-	e = new halfEdge[MAX_NR_OF_EDGES];
+	triangleArray = new triangle[MAX_TRIANGLE_COUNT];
+	triEPtr = new int[MAX_TRIANGLE_COUNT];
+
+	e = new halfEdge[MAX_EDGE_COUNT];
 
 	//sTail = new sVert;
 	/*sHead = new sVert;
@@ -40,14 +59,29 @@ DynamicMesh::DynamicMesh() {
 	orientation[12] = 0.0f; orientation[13] = 0.0f; orientation[14] = 0.0f; orientation[15] = 1.0f;
 }
 
-DynamicMesh::DynamicMesh(std::string fileName) {
-	//vertexArray = new vertex[MAX_NR_OF_VERTICES];
-	//vInfoArray = new vInfo[MAX_NR_OF_VERTICES];
+DynamicMesh::DynamicMesh(std::string fileName) 
+	: emptyV(0),
+	emptyT(0),
+	emptyE(0),
+	vertexCap(0),
+	triangleCap(0),
+	vertexRange(0),
+	triangleRange(0),
+	triEPtr(0),
+	nrofEdges(0),
+	edgeCap(0),
+	HNR(0),
+	CNR(0),
+	MAX_LENGTH(0.025f * 0.2f),
+	MIN_LENGTH(0.0124f * 0.2f) 
+{
+	//vertexArray = new vertex[MAX_VERTEX_COUNT];
+	//vInfoArray = new vInfo[MAX_VERTEX_COUNT];
 
-	//triangleArray = new triangle[MAX_NR_OF_TRIANGLES];
-	//triEPtr = new int[MAX_NR_OF_TRIANGLES];
+	//triangleArray = new triangle[MAX_TRIANGLE_COUNT];
+	//triEPtr = new int[MAX_TRIANGLE_COUNT];
 
-	//e = new halfEdge[MAX_NR_OF_EDGES];
+	//e = new halfEdge[MAX_EDGE_COUNT];
 
 	load(fileName);
 
@@ -79,12 +113,12 @@ void DynamicMesh::createBuffers() {
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 	// Present our vertex coordinates to OpenGL
 	glBufferData(GL_ARRAY_BUFFER,
-		(MAX_NR_OF_VERTICES)*sizeof(dBufferData), NULL, GL_STREAM_DRAW);
+		(MAX_VERTEX_COUNT)*sizeof(dBufferData), NULL, GL_STREAM_DRAW);
 
-	vertexP = (dBufferData*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sizeof(dBufferData) *MAX_NR_OF_VERTICES,
+	vertexP = (dBufferData*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sizeof(dBufferData) *MAX_VERTEX_COUNT,
 		GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 
-	for (int i = 0; i < MAX_NR_OF_VERTICES; i++) {
+	for (int i = 0; i < MAX_VERTEX_COUNT; i++) {
 		vertexP[i].x = vertexArray[i].xyz[0];
 		vertexP[i].y = vertexArray[i].xyz[1];
 		vertexP[i].z = vertexArray[i].xyz[2];
@@ -117,12 +151,12 @@ void DynamicMesh::createBuffers() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbuffer);
 	// Present our vertex indices to OpenGL
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-		(MAX_NR_OF_TRIANGLES)*sizeof(triangle), NULL, GL_STREAM_DRAW);
+		(MAX_TRIANGLE_COUNT)*sizeof(triangle), NULL, GL_STREAM_DRAW);
 
-	indexP = (triangle*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(triangle) * MAX_NR_OF_TRIANGLES,
+	indexP = (triangle*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(triangle) * MAX_TRIANGLE_COUNT,
 		GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 
-	for (int i = 0; i < MAX_NR_OF_TRIANGLES; i++) {
+	for (int i = 0; i < MAX_TRIANGLE_COUNT; i++) {
 		indexP[i].index[0] = triangleArray[i].index[0];
 		indexP[i].index[1] = triangleArray[i].index[1];
 		indexP[i].index[2] = triangleArray[i].index[2];
@@ -286,16 +320,15 @@ void DynamicMesh::render() {
 
 void DynamicMesh::sphereSubdivide(float rad) {
 
-	vertexArray = new vertex[MAX_NR_OF_VERTICES];
-	vInfoArray = new vInfo[MAX_NR_OF_VERTICES];
+	vertexArray = new vertex[MAX_VERTEX_COUNT];
+	vInfoArray = new vInfo[MAX_VERTEX_COUNT];
 
-	triangleArray = new triangle[MAX_NR_OF_TRIANGLES];
-	triEPtr = new int[MAX_NR_OF_TRIANGLES];
+	triangleArray = new triangle[MAX_TRIANGLE_COUNT];
+	triEPtr = new int[MAX_TRIANGLE_COUNT];
 
-	e = new halfEdge[MAX_NR_OF_EDGES];
+	e = new halfEdge[MAX_EDGE_COUNT];
 
 	float stepRad = MIN_LENGTH;
-	float tempP1[3];
 	sVert tempSV;
 
 	std::vector<int> changedVertices;
@@ -306,17 +339,17 @@ void DynamicMesh::sphereSubdivide(float rad) {
 	nrofEdges = 24; edgeCap = 24;
 
 	//create queue for vertices
-	for (int i = 0; i < MAX_NR_OF_VERTICES; i++) {
+	for (int i = 0; i < MAX_VERTEX_COUNT; i++) {
 		vInfoArray[i].edgePtr = -(i + 1);
 	}
 	emptyV = -7;
 	//create queue for Triangles
-	for (int i = 0; i < MAX_NR_OF_TRIANGLES; i++) {
+	for (int i = 0; i < MAX_TRIANGLE_COUNT; i++) {
 		triEPtr[i] = -(i + 1);
 	}
 	emptyT = -9;
 	//create queue for Edges
-	for (int i = 0; i < MAX_NR_OF_EDGES; i++) {
+	for (int i = 0; i < MAX_EDGE_COUNT; i++) {
 		e[i].nextEdge = -(i + 1);
 	}
 	emptyE = -25;
@@ -524,13 +557,13 @@ void DynamicMesh::load(std::string fileName) {
 
 	delete e;
 
-	vertexArray = new vertex[MAX_NR_OF_VERTICES];
-	vInfoArray = new vInfo[MAX_NR_OF_VERTICES];
+	vertexArray = new vertex[MAX_VERTEX_COUNT];
+	vInfoArray = new vInfo[MAX_VERTEX_COUNT];
 
-	triangleArray = new triangle[MAX_NR_OF_TRIANGLES];
-	triEPtr = new int[MAX_NR_OF_TRIANGLES];
+	triangleArray = new triangle[MAX_TRIANGLE_COUNT];
+	triEPtr = new int[MAX_TRIANGLE_COUNT];
 
-	e = new halfEdge[MAX_NR_OF_EDGES];
+	e = new halfEdge[MAX_EDGE_COUNT];
 
 	// read mesh from file
 	std::cout << "loading mesh..." << std::endl;
@@ -637,15 +670,15 @@ void DynamicMesh::load(std::string fileName) {
 		triangleRange = 0;
 
 	//create queue for vertices
-	for (int i = vertexCap + 1; i < MAX_NR_OF_VERTICES; i++) {
+	for (int i = vertexCap + 1; i < MAX_VERTEX_COUNT; i++) {
 		vInfoArray[i].edgePtr = -(i + 1);
 	}
 	//create queue for Triangles
-	for (int i = triangleCap + 1; i < MAX_NR_OF_TRIANGLES; i++) {
+	for (int i = triangleCap + 1; i < MAX_TRIANGLE_COUNT; i++) {
 		triEPtr[i] = -(i + 1);
 	}
 	//create queue for Edges
-	for (int i = edgeCap + 1; i < MAX_NR_OF_EDGES; i++) {
+	for (int i = edgeCap + 1; i < MAX_EDGE_COUNT; i++) {
 		e[i].nextEdge = -(i + 1);
 	}
 }
@@ -982,7 +1015,7 @@ void DynamicMesh::updateNormals(int* changeList, int listSize) {
 	static float tempVec1[3], tempVec2[3], tempVec3[3];
 	static float tempNorm1[3] = { 0.0f, 0.0f, 0.0f };
 	static float tempNorm2[3] = { 0.0f, 0.0f, 0.0f };
-	int tempEdge; int tempE;
+	int tempEdge;
 	static int vert1, vert2, vert3;
 	static float edgeLength, edgeLength2;
 

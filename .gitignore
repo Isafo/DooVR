@@ -193,13 +193,9 @@ FakesAssemblies/
 
 # Visual Studio 6 build log
 *.plg
-*.vcxproj
-*.vcxproj.filters
-*.sln
 
 # Visual Studio 6 workspace options file
 *.opt
-
 
 ### OSX ###
 .DS_Store
@@ -250,7 +246,6 @@ Temporary Items
 *.la
 *.a
 *.dll
-*.lib
 
 # Executables
 *.exe
@@ -258,13 +253,9 @@ Temporary Items
 *.app
 
 # Sub directories
-include/
-lib/
-OculusSDK/
-Src/
-Assets/
 savedFiles/
 exportedFiles/
+.vs
 
 # RC files
 *.rc

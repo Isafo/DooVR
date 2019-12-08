@@ -3,14 +3,21 @@
 #include <fstream>
 #include <string>
 #include <iostream>
+#include <assert.h>
 
 StaticMesh::StaticMesh()
+	: texArray(nullptr)
 {
 }
 
 
 StaticMesh::~StaticMesh()
 {
+	if (texArray != nullptr)
+	{
+		delete texArray;
+		texArray = nullptr;
+	}
 }
 
 
@@ -24,9 +31,6 @@ void StaticMesh::render() {
 void StaticMesh::createBuffers() {
 	triangle* indexP;
 	sBufferData * vertexP;
-	texCoords tempTex;
-	tempTex.u = 0.0f;
-	tempTex.v = 0.0f;
 
 	//vertexP = &vertexArray[0];
 	//indexP = &triangleArray[0];
@@ -52,11 +56,11 @@ void StaticMesh::createBuffers() {
 		vertexP[i].x = vertexArray[i].xyz[0];
 		vertexP[i].y = vertexArray[i].xyz[1];
 		vertexP[i].z = vertexArray[i].xyz[2];
-		vertexP[i].nx = vertexArray[i].nxyz[0];
-		vertexP[i].ny = vertexArray[i].nxyz[1];
+		vertexP[i].nx = vertexArray[i].xyz[0];
+		vertexP[i].ny = vertexArray[i].xyz[0];
 		vertexP[i].nz = vertexArray[i].nxyz[2];
-		vertexP[i].u = tempTex.u;
-		vertexP[i].v = tempTex.v;
+		vertexP[i].u = texArray != nullptr ? texArray[i].u : 0.0f;
+		vertexP[i].v = texArray != nullptr ? texArray[i].v : 0.0f;
 	}
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 
@@ -165,4 +169,38 @@ void StaticMesh::load(std::string fileName) {
 	else {
 		std::cout << "could not open file" << std::endl;
 	}
+}
+
+void StaticMesh::create(float* sourceVertecies, int* sourceIndecies, int vertexCount, int triangleCount) {
+
+	assert(sourceVertecies != nullptr);
+	assert(sourceIndecies != nullptr);
+	assert(vertexCount != 0);
+	assert(triangleCount != 0);
+	
+	vertexArray = new vertex[vertexCount];
+	triangleArray = new triangle[triangleCount];
+
+	texArray = new texCoords[vertexCount];
+
+	for (int it = 0; it < vertexCount * 5; it + 5) {
+		vertexArray[it].xyz[0] = sourceVertecies[it];
+		vertexArray[it].xyz[1] = sourceVertecies[it + 1];
+		vertexArray[it].xyz[2] = sourceVertecies[it + 2];
+		vertexArray[it].nxyz[0] = vertexArray[it].xyz[0];
+		vertexArray[it].nxyz[1] = vertexArray[it].xyz[1];
+		vertexArray[it].nxyz[2] = vertexArray[it].xyz[2];
+		texArray[it].u = sourceVertecies[it + 3];
+		texArray[it].v = sourceVertecies[it + 4];
+	}
+
+	for (int it = 0; it < triangleCount; it++) {
+
+		int sourceIt = it * 3;
+		triangleArray[it].index[0] = sourceIndecies[sourceIt];
+		triangleArray[it].index[1] = sourceIndecies[sourceIt + 1];
+		triangleArray[it].index[2] = sourceIndecies[sourceIt + 2];
+	}
+
+	createBuffers();	
 }

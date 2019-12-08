@@ -41,14 +41,10 @@ private:
 	int previouslySelectedSize;
 
 	vertex* mVertexArray;
-	halfEdge* mEdgeArray;
 	vInfo* mVInfoArray;
+	halfEdge* mEdgeArray;
 	float* mPosition;
 	float* mOrientation;
-
-	float* wPosition;
-	float* wDirection;
-	float* wOrientation;
 
 	float mMAX_LENGTH;
 
@@ -60,6 +56,6 @@ private:
 	float midLength;
 	int mIndex;
 
-	float wPoint[4]; float newWPoint[4]; float Dirr[4]; float newDirr[4]; float vel[4];
+	float wPoint[4]; float newWPoint[4]; float Dirr[4]; float newDirr[4];
 	float spherePos[4];
 };

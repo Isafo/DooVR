@@ -86,17 +86,14 @@ class DynamicMesh : public Mesh{
 
   private:
 
-	const int MAX_NR_OF_VERTICES = 1000000;
 	//! negative index of the latest removed vertex
 	/*! vInfoArray's edgepointer contains the negative index of an empty slot in the vertexArray*/
 	int emptyV;
 
-	const int MAX_NR_OF_TRIANGLES = 2 * MAX_NR_OF_VERTICES;
 	//! negative index of the latest removed triangle
 	/*! triEPtr contains the negative index of an empty slot in the triangleArray*/
 	int emptyT;
 
-	const int MAX_NR_OF_EDGES = 3 * MAX_NR_OF_VERTICES;
 	//! negative index of the latest removed edge
 	/*! nextEdge contains the negative index of an empty slot in the halfEdge array e*/
 	int emptyE;
@@ -107,9 +104,9 @@ class DynamicMesh : public Mesh{
 	int triangleCap;
 
 	//! tells the range that needs to be cleaned in the buffer after loading a smaller mesh
-	int vertexRange = 0;
+	int vertexRange;
 	//! tells the range that needs to be cleaned in the buffer after loading a smaller mesh
-	int triangleRange = 0;
+	int triangleRange;
 
 	//! Array that exists parallell to the vertexArray and contains indices to an edge that is connected to the corresponding triangle
 	/*! An empty slot in vInfoArray and vertexArray saves the negative index of the next empty slot in the array in the edgePtr variable.*/
@@ -136,8 +133,8 @@ class DynamicMesh : public Mesh{
 	
 	//float midPoint[3];
 
-	const float MAX_LENGTH = 0.025f * 0.2f; // 0.08f*0.1f;
-	const float MIN_LENGTH = 0.0124f * 0.2f;
+	const float MAX_LENGTH; // 0.08f*0.1f;
+	const float MIN_LENGTH;
 
 	std::string fileName;
 

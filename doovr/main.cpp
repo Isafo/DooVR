@@ -27,7 +27,7 @@
 #include <time.h>
 
 #include "Utilities.h"
-#include "Oculus.h"
+#include "OpenVR.h"
 
 #include "Shader.h"
 #include "MatrixStack.h"
@@ -42,11 +42,13 @@
 Very short function. Simply decides which mode the user wants to use and then 
 redirects to two different namespaces depending on the choice. 
 */
-int main() {
+int main(int argc, char* argv[]) {
 
 	int runSuccess = 0;
 	
-	runSuccess = Oculus::runOvr();
+	OpenVR::runOpenVR(argc, argv);
+
+	//runSuccess = Oculus::runOvr();
 	
 	return runSuccess;
 }

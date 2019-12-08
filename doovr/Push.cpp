@@ -4,21 +4,23 @@
 
 
 Push::Push(DynamicMesh* mesh, Wand* wand)
+	: Tool(),
+	radius(0.01f),
+	mVertexArray(mesh->vertexArray),
+	mVInfoArray(mesh->vInfoArray),
+	mEdgeArray(mesh->e),
+	mPosition(mesh->position),
+	mOrientation(mesh->orientation),
+	mMAX_LENGTH(mesh->MAX_LENGTH),
+	tempVec{ 0.0f, 0.0f, 0.0f },
+	zVec{ 0.0f, 0.0f, 1.0f },
+	iTransform{ 1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f, }
 {
-	selectedVertices = new int[MAX_SELECTED]; selectedSize = 0;
-
-
-	radius = 0.01f;
+	selectedVertices = new int[MAX_SELECTED];
 	toolBrush = new LineSphere(0.0f, 0.0f, 0.0f, 1.0f);
-
-	mVertexArray = mesh->vertexArray;
-	mVInfoArray = mesh->vInfoArray;
-	mEdgeArray = mesh->e;
-	mPosition = mesh->position;
-	mOrientation = mesh->orientation;
-	mMAX_LENGTH = mesh->MAX_LENGTH;
-
-	zVec[0] = 0.0f;  zVec[1] = 0.0f; zVec[2] = 1.0f;
 
 	selectedVertices[0] = 101;
 }
@@ -49,7 +51,7 @@ void Push::firstSelect(DynamicMesh* mesh, Wand* wand)
 {
 	float newWPoint[4];
 	float Dirr[4]; float newDirr[4];
-	float tempVec1[3]; float tempVec2[3];
+	float tempVec1[3];
 	float wPoint[4]; float* vPoint; float* vPoint2;
 	int index; int index2;
 
@@ -141,13 +143,10 @@ void Push::firstSelect(DynamicMesh* mesh, Wand* wand)
 void Push::moveVertices(DynamicMesh* mesh, Wand* wand, float dT){
 	float newWPoint[4];
 	float Dirr[4]; float newDirr[4];
-	float tempVec1[3]; float tempVec2[3];
+	float tempVec1[3];
 	float wPoint[4]; float* vPoint; float* vPoint2;
 	int index; int index2;
 	float* vNorm;
-	float dot;
-	float d;
-	float l;
 
 	int tempEdge;
 

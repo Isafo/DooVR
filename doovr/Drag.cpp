@@ -4,25 +4,38 @@
 #define EPSILON 0.000001
 
 Drag::Drag(DynamicMesh* mesh, Wand* wand)
+	: Tool(),
+	radius(0.01f),
+	pointer(new Line(0.0f, 0.0f, 0.0f, 0.1f)),
+	lineOffset{ 0.0f, 0.0f, 0.1f },
+	iCircle(new Circle(0.0f, 0.0f, 0.0f, 1.0f)),
+	intersection{},
+	previouslySelectedVertices(new int[MAX_SELECTED]),
+	previouslySelectedSize(0),
+	mVertexArray(mesh->vertexArray),
+	mVInfoArray(mesh->vInfoArray),
+	mEdgeArray(mesh->e),
+	mPosition(mesh->position),
+	mOrientation(mesh->orientation),
+	mMAX_LENGTH(mesh->MAX_LENGTH),
+	tempVec{ 0.0f, 0.0f, 0.0f },
+	zVec{ 0.0f, 0.0f, 1.0f },
+	iTransform{ 1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f, },
+	midPoint{ 0.0f, 0.0f, 0.0f },
+	midLength(0.0),
+	mIndex(-1),
+	wPoint { 0.0f, 0.0f, 0.0f, 0.0f },
+	newWPoint{ 0.0f, 0.0f, 0.0f, 0.0f },
+	Dirr{ 0.0f, 0.0f, 1.0f, 0.0f },
+	newDirr{ 0.0f, 0.0f, 0.0f, 0.0f },
+	spherePos{ 0.0f, 0.0f, 0.0f, 0.0f }
 {
-	selectedVertices = new int[MAX_SELECTED]; selectedSize = 0;
-	previouslySelectedVertices = new int[MAX_SELECTED]; previouslySelectedSize = 0;
-
-	radius = 0.01f;
+	selectedVertices = new int[MAX_SELECTED];
 	toolBrush = new Circle(0.0f, 0.0f, 0.0f, 1.0f);
-	pointer = new Line(0.0f, 0.0f, 0.0f, 0.1f);
-	iCircle = new Circle(0.0f, 0.0f, 0.0f, 1.0f);
 
-	lineOffset[0] = 0.0f;
-	lineOffset[1] = 0.0f;
-	lineOffset[2] = 0.1f;
-
-	mVertexArray = mesh->vertexArray;
-	mVInfoArray = mesh->vInfoArray;
-	mEdgeArray = mesh->e;
-	mPosition = mesh->position;
-	mOrientation = mesh->orientation;
-	mMAX_LENGTH = mesh->MAX_LENGTH;
 
 	linAlg::transpose(mOrientation);
 	//--< 1.0 | calculated the position and direction of the wand
@@ -38,7 +51,6 @@ Drag::Drag(DynamicMesh* mesh, Wand* wand)
 	Dirr[3] = 1.0f;
 	linAlg::vectorMatrixMult(mOrientation, Dirr, newDirr);
 	linAlg::transpose(mOrientation);
-	mIndex = -1;
 
 	zVec[0] = 0.0f;  zVec[1] = 0.0f; zVec[2] = 1.0f;
 }
@@ -96,9 +108,8 @@ void Drag::firstSelect(DynamicMesh* mesh, Wand* wand)
 	float wPoint[4]; float newWPoint[4]; float Dirr[4]; float newDirr[4];
 	float eVec1[3]; float eVec2[3];
 	float P[3]; float Q[3]; float T[3];
-	float* vPoint; float* vPoint2; float vNorm[3]; float* vNorm2;
+	float* vPoint; float vNorm[3];
 	int index; int index2;
-	float* ptrVec;
 
 	int tempEdge; int tempE;
 
@@ -107,7 +118,6 @@ void Drag::firstSelect(DynamicMesh* mesh, Wand* wand)
 	float pLength = 0.0f; float invP = 0.0f; float u = 0.0f; float v = 0.0f; float t = 0.0f;
 	float oLength = 0.0f;
 
-	float mLength;
 
 	intersection.nxyz[0] = 100.f; intersection.nxyz[1] = 100.f; intersection.nxyz[2] = 100.f;
 
@@ -302,14 +312,12 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT)
 {
 	deSelect();
 
-	float eVec1[3]; float eVec2[3];
-	float P[3]; float Q[3]; float T[3]; float lengthVec[3];
-	float* vPoint; float* vPoint2; float* vPoint1; float* vNorm; float* vNorm2;
+	float P[3]; float Q[3]; float T[3];
+	float* vPoint; float* vPoint2; float* vNorm;
 	int index; int index2;
-	float* ptrVec;
 
 	float tempVec1[3];
-	int tempEdge; int tempE;
+	int tempEdge;
 
 	int tempSize;
 
@@ -319,9 +327,6 @@ void Drag::moveVertices(DynamicMesh* mesh, Wand* wand, float dT)
 	float oLength = 0.0f;
 
 	float mLength;
-
-	int* usedList; int* emptyList;
-	int usedSize; int emptySize;
 
 
 	intersection.nxyz[0] = 100.f; intersection.nxyz[1] = 100.f; intersection.nxyz[2] = 100.f;

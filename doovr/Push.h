@@ -24,14 +24,10 @@ private:
 	float radius;
 
 	vertex* mVertexArray;
-	halfEdge* mEdgeArray;
 	vInfo* mVInfoArray;
+	halfEdge* mEdgeArray;
 	float* mPosition;
 	float* mOrientation;
-
-	float* wPosition;
-	float* wDirection;
-	float* wOrientation;
 
 	float mMAX_LENGTH;
 

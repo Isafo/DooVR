@@ -41,8 +41,8 @@ private:
 	int previouslySelectedSize;
 
 	vertex* mVertexArray;
-	halfEdge* mEdgeArray;
 	vInfo* mVInfoArray;
+	halfEdge* mEdgeArray;
 	float* mPosition;
 	float* mOrientation;
 

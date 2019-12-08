@@ -31,6 +31,6 @@ protected:
 	int* selectedVertices;
 	int selectedSize;
 
-	const int MAX_SELECTED = 100000;
+	const int MAX_SELECTED;
 };
 
