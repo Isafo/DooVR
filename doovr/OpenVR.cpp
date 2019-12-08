@@ -38,537 +38,6 @@ do {                                                       \
         abort();                                           \
     }                                                      \
 } while(false)
-//
-//struct DepthBuffer
-//{
-//	GLuint        texId;
-//
-//	DepthBuffer(int width, int height)
-//	{
-//		glGenTextures(1, &texId);
-//		GL_CHECK_ERROR;
-//		glBindTexture(GL_TEXTURE_2D, texId);
-//		GL_CHECK_ERROR;
-//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//		GL_CHECK_ERROR;
-//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//		GL_CHECK_ERROR;
-//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//		GL_CHECK_ERROR;
-//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//		GL_CHECK_ERROR;
-//
-//		GLenum internalFormat = GL_DEPTH_COMPONENT24;
-//		GLenum type = GL_UNSIGNED_INT;
-//
-//		internalFormat = GL_DEPTH_COMPONENT32F;
-//		type = GL_FLOAT;
-//
-//		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, GL_DEPTH_COMPONENT, type, NULL);
-//		GL_CHECK_ERROR;
-//	}
-//	~DepthBuffer()
-//	{
-//		if (texId)
-//		{
-//			glDeleteTextures(1, &texId);
-//			GL_CHECK_ERROR;
-//			texId = 0;
-//		}
-//	}
-//};
-//
-//struct TextureBuffer
-//{
-//	GLuint              texId;
-//	GLuint              fboId;
-//	int					width;
-//	int					height;
-//
-//	TextureBuffer(bool rendertarget, int sourceWidth, int sourceHeight, int mipLevels, unsigned char * data, int sampleCount) :
-//		texId(0),
-//		fboId(0),
-//		width(0),
-//		height(0)
-//	{
-//		width = sourceWidth;
-//		height = sourceHeight;
-//		
-//		glGenTextures(1, &texId);
-//		GL_CHECK_ERROR;
-//		glBindTexture(GL_TEXTURE_2D, texId);
-//		GL_CHECK_ERROR;
-//
-//		if (rendertarget)
-//		{
-//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//			GL_CHECK_ERROR;
-//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//			GL_CHECK_ERROR;
-//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//			GL_CHECK_ERROR;
-//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//			GL_CHECK_ERROR;
-//		}
-//		else
-//		{
-//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-//			GL_CHECK_ERROR;
-//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//			GL_CHECK_ERROR;
-//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//			GL_CHECK_ERROR;
-//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-//			GL_CHECK_ERROR;
-//		}
-//
-//		glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-//		GL_CHECK_ERROR;
-//
-//		if (mipLevels > 1)
-//		{
-//			glGenerateMipmap(GL_TEXTURE_2D);
-//			GL_CHECK_ERROR;
-//		}
-//
-//		glGenFramebuffers(1, &fboId);
-//		GL_CHECK_ERROR;
-//	}
-//
-//	~TextureBuffer()
-//	{
-//		if (texId)
-//		{
-//			glDeleteTextures(1, &texId);
-//			GL_CHECK_ERROR;
-//			texId = 0;
-//		}
-//		if (fboId)
-//		{
-//			glDeleteFramebuffers(1, &fboId);
-//			GL_CHECK_ERROR;
-//			fboId = 0;
-//		}
-//	}
-//
-//	void SetAndClearRenderSurface(DepthBuffer* dbuffer)
-//	{
-//		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-//		GL_CHECK_ERROR;
-//		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texId, 0);
-//		GL_CHECK_ERROR;
-//		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dbuffer->texId, 0);
-//		GL_CHECK_ERROR;
-//
-//		glViewport(0, 0, width, height);
-//		GL_CHECK_ERROR;
-//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//		GL_CHECK_ERROR;
-//		glEnable(GL_FRAMEBUFFER_SRGB);
-//		GL_CHECK_ERROR;
-//	}
-//
-//	void UnsetRenderSurface()
-//	{
-//		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-//		GL_CHECK_ERROR;
-//		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-//		GL_CHECK_ERROR;
-//		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-//		GL_CHECK_ERROR;
-//	}
-//};
-//
-//
-//static std::string get_property_string(vr::IVRSystem* system, vr::TrackedDeviceIndex_t deviceIndex, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError* error = nullptr)
-//{
-//	unsigned int requiredBufferLen = system->GetStringTrackedDeviceProperty(deviceIndex, prop, nullptr, 0, error);
-//	if (requiredBufferLen == 0) {
-//		return "";
-//	}
-//
-//	std::vector<char> buffer(requiredBufferLen);
-//	requiredBufferLen = system->GetStringTrackedDeviceProperty(deviceIndex, prop, &buffer[0], requiredBufferLen, error);
-//
-//	return std::string(&buffer[0]);
-//}
-//
-//static void get_active_controllers(vr::IVRSystem* vrSystem, std::vector<std::string>* controllerNames, std::vector<vr::TrackedDeviceIndex_t>* controllerDeviceIndex, int* trackerDeviceIndex)
-//{
-//	controllerNames->clear();
-//	controllerDeviceIndex->clear();
-//	*trackerDeviceIndex = -1;
-//
-//	for (int i = 0; i < vr::k_unMaxTrackedDeviceCount; i++) {
-//		std::string deviceName = get_property_string(vrSystem, i, vr::Prop_RenderModelName_String);
-//		if (deviceName.size() > 0) {
-//
-//			// Only add controller devices
-//			if (std::string::npos != deviceName.find("controller")) {
-//				controllerNames->push_back(deviceName);
-//				controllerDeviceIndex->push_back(i);
-//
-//				// Start the process of loading in the model
-//				vr::RenderModel_t* pRenderModel = nullptr;
-//				vr::VRRenderModels()->LoadRenderModel_Async(deviceName.c_str(), &pRenderModel);
-//			}
-//
-//			// Add tracker devices
-//			if (std::string::npos != deviceName.find("tracker")) {
-//				*trackerDeviceIndex = i;
-//			}
-//		}
-//	}
-//}
-//
-//void fetchModels(std::vector<std::unique_ptr<StaticMesh>>* controllerModels, std::vector<std::string>* controllerNames)
-//{
-//	// Start at controllerModels.size() because we don't want to reload already loaded models.
-//	for (std::size_t i = controllerModels->size(); i < controllerNames->size(); i++) {
-//
-//		vr::RenderModel_t* renderModel = nullptr;
-//		vr::EVRRenderModelError renderModelError = vr::VRRenderModels()->LoadRenderModel_Async(controllerNames->at(i).c_str(), &renderModel);
-//
-//		if (renderModelError == 0) {
-//
-//			std::vector<float> vertexData;
-//			std::vector<int> indexData;
-//
-//			int vertexCount = renderModel->unVertexCount;
-//			int indexCount = renderModel->unTriangleCount * 3;
-//			vertexData.resize(vertexCount * 5);
-//			indexData.resize(indexCount);
-//
-//			for (int it = 0; it < indexCount; it++) {
-//				indexData.push_back(renderModel->rIndexData[it]);
-//			}
-//
-//			for (int it = 0; it < vertexCount; it++) {
-//				vertexData.push_back(renderModel->rVertexData[it].vPosition.v[0]);
-//				vertexData.push_back(renderModel->rVertexData[it].vPosition.v[1]);
-//				vertexData.push_back(renderModel->rVertexData[it].vPosition.v[2]);
-//				vertexData.push_back(renderModel->rVertexData[it].rfTextureCoord[0]);
-//				vertexData.push_back(renderModel->rVertexData[it].rfTextureCoord[1]);
-//			}
-//			
-//			std::unique_ptr<StaticMesh> controller = std::make_unique<StaticMesh>();
-//			controller->create(vertexData.data(), indexData.data(), vertexCount, int(renderModel->unTriangleCount));
-//
-//			controllerModels->push_back(std::move(controller));
-//		}
-//		else {
-//			break;
-//		}
-//	}
-//}
-//
-//static void WindowSizeCallback(GLFWwindow* p_Window, int p_Width, int p_Height) {
-//	/*if (p_Width>0 && p_Height>0) {
-//	g_Cfg.OGL.Header.BackBufferSize.w = p_Width;
-//	g_Cfg.OGL.Header.BackBufferSize.h = p_Height;
-//
-//	ovrBool l_ConfigureResult = ovrHmd_ConfigureRendering(hmd, &g_Cfg.Config, G_DISTORTIONCAPS, hmd->MaxEyeFov, g_EyeRenderDesc);
-//	if (!l_ConfigureResult) {
-//	printf("Configure failed.\n");
-//	exit(EXIT_FAILURE);
-//	}
-//	}*/
-//}
-//
-//const bool L_MULTISAMPLING = false;
-//
-//void GLRenderCallsOpenVR() {
-//	// Clear...
-//	//GL calls
-//	glClearColor(0.01f, 0.01f, 0.01f, 0.0f);
-//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//	glEnable(GL_DEPTH_TEST);
-//	glEnable(GL_CULL_FACE);
-//	glEnable(GL_FRAMEBUFFER_SRGB);
-//	//glEnable(GL_FLAT);
-//	glShadeModel(GL_FLAT);
-//	glCullFace(GL_BACK);
-//	//glDisable(GL_TEXTURE);
-//	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-//	glEnable(GL_BLEND);
-//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//	glFrontFace(GL_CCW);
-//	//glEnable(GL_POLYGON_STIPPLE);
-//
-//	if (L_MULTISAMPLING) {
-//		glEnable(GL_MULTISAMPLE);
-//	}
-//	else {
-//		glDisable(GL_MULTISAMPLE);
-//	}
-//}
-//
-//
-//
-//int OpenVR::runOpenVR() {
-//	TextureBuffer* eyeRenderTexture[2] = { nullptr, nullptr };
-//	DepthBuffer* eyeDepthBuffer[2] = { nullptr, nullptr };
-//
-//	// init openvr ===================================
-//	unsigned int targetWidth = 0;
-//	unsigned int targetHeight = 0;
-//	
-//	vr::EVRInitError error = vr::VRInitError_None;
-//	vr::IVRSystem* hmd = vr::VR_Init(&error, vr::VRApplication_Scene);
-//	if (error != vr::VRInitError_None) {
-//		return -1;
-//	}
-//
-//	hmd->GetRecommendedRenderTargetSize(&targetWidth, &targetHeight);
-//
-//	std::vector<std::string> controllerNames;
-//	std::vector<vr::TrackedDeviceIndex_t> controllerDeviceIndex;
-//	std::vector<std::unique_ptr<StaticMesh>> controllerModels;
-//	int trackerDeviceIndex;
-//	get_active_controllers(hmd, &controllerNames, &controllerDeviceIndex, &trackerDeviceIndex);
-//
-//	vr::ETrackingUniverseOrigin prevTrackingSpace = vr::VRCompositor()->GetTrackingSpace();
-//
-//	// INITIALIZE GL \__________________________________________________________________________________________________________________________
-//	if (!glfwInit()) {
-//		fprintf(stderr, "ERROR: could not start GLFW3\n");
-//		return 1;
-//	}
-//
-//	if (L_MULTISAMPLING) glfwWindowHint(GLFW_SAMPLES, 4);
-//	else glfwWindowHint(GLFW_SAMPLES, 0);
-//
-//
-//	// SETUP GLFW WINDOW AND CONTEXT /////////////////////////////////////////////////////////////
-//	// Create a window...
-//	GLFWwindow* l_Window;
-//	GLFWmonitor* l_Monitor = NULL;
-//	l_Window = glfwCreateWindow(targetWidth, targetHeight, "GLFW Oculus Rift Test", l_Monitor, NULL);
-//
-//	// Check if window creation was succesfull...
-//	if (!l_Window) {
-//		glfwTerminate();
-//		exit(EXIT_FAILURE);
-//	}
-//	// Make the context current for this window...
-//	glfwMakeContextCurrent(l_Window);
-//
-//	//start GLEW extension handler
-//	glewExperimental = GL_TRUE;
-//	GLenum l_GlewResult = glewInit();
-//	if (l_GlewResult != GLEW_OK) {
-//		printf("glewInit() error.\n");
-//		exit(EXIT_FAILURE);
-//	}
-//
-//	// Print some info about the OpenGL context...
-//	int l_Major = glfwGetWindowAttrib(l_Window, GLFW_CONTEXT_VERSION_MAJOR);
-//	int l_Minor = glfwGetWindowAttrib(l_Window, GLFW_CONTEXT_VERSION_MINOR);
-//	int l_Profile = glfwGetWindowAttrib(l_Window, GLFW_OPENGL_PROFILE);
-//	printf("OpenGL: %d.%d ", l_Major, l_Minor);
-//	if (l_Major >= 3) { // Profiles introduced in OpenGL 3.0...
-//		if (l_Profile == GLFW_OPENGL_COMPAT_PROFILE) printf("GLFW_OPENGL_COMPAT_PROFILE\n"); else printf("GLFW_OPENGL_CORE_PROFILE\n");
-//	}
-//	printf("Vendor: %s\n", (char*)glGetString(GL_VENDOR));
-//	printf("Renderer: %s\n", (char*)glGetString(GL_RENDERER));
-//
-//	// TEXTURE BUFFERS =============================================================================================
-//	// Make eye render buffers
-//	for (int eye = 0; eye < 2; ++eye)
-//	{
-//		eyeRenderTexture[eye] = new TextureBuffer(true, targetWidth, targetHeight, 1, NULL, 1);
-//		eyeDepthBuffer[eye] = new DepthBuffer(targetWidth, targetHeight);
-//	}
-//
-//	// TODO MIRROR TEXTURE GOES HERE =============================================================================================
-//
-//
-//	//WandView =============================================================================================
-//
-//	// create and set up the FBO
-//	GLuint wandViewFBO;
-//	glGenFramebuffers(1, &wandViewFBO);
-//	glBindFramebuffer(GL_FRAMEBUFFER, wandViewFBO);
-//
-//	GLfloat border[] = { 1.0f, 0.0f, 0.0f, 0.0f };
-//
-//	GLuint wandShadowMap;
-//	glGenTextures(1, &wandShadowMap);
-//	glBindTexture(GL_TEXTURE_2D, wandShadowMap);
-//	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//	//glDrawBuffer(GL_NONE); // No color buffer is drawn to.
-//	/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-//	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
-//	*/
-//	//Assign the shadow map to texture channel 0 
-//	glActiveTexture(GL_TEXTURE0);
-//	glBindTexture(GL_TEXTURE_2D, wandShadowMap);
-//
-//	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, wandShadowMap, 0);
-//
-//	GLuint pickingTexture;
-//	glGenTextures(1, &pickingTexture);
-//	glBindTexture(GL_TEXTURE_2D, pickingTexture);
-//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB_FLOAT32_ATI, 1024, 1024,
-//		0, GL_RGB, GL_FLOAT, NULL);
-//	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-//		pickingTexture, 0);
-//
-//	//glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, wandShadowMap, 0);
-//	//glDrawBuffer(GL_NONE);
-//	//glReadBuffer(GL_NONE);
-//	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-//
-//	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-//
-//	if (Status != GL_FRAMEBUFFER_COMPLETE) {
-//		printf("FB error, status: 0x%x\n", Status);
-//		return false;
-//	}
-//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//
-//
-//	glfwSetWindowSizeCallback(l_Window, WindowSizeCallback);
-//
-//	// Create the scene =====================================================
-//	MatrixStack MVstack; MVstack.init();
-//	MatrixStack* MVptr = &MVstack;
-//
-//	float currTime = 0;
-//	float lastTime = 0;
-//	float deltaTime = 0;
-//
-//	DynamicMesh modellingMesh;
-//	float dynamicMeshPosition[3] = { 0.0f, 0.0f, 0.0f };
-//	modellingMesh.setPosition(dynamicMeshPosition);
-//	modellingMesh.sphereSubdivide(0.05f); 
-//	modellingMesh.createBuffers();
-//
-//	// HMD variables ========================================================
-//	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
-//
-//	// Update ===============================================================
-//	while (!glfwWindowShouldClose(l_Window)) {
-//
-//		lastTime = currTime;
-//		currTime = glfwGetTime();
-//		deltaTime = currTime - lastTime;
-//	
-//		// OpenVR Update =========================
-//		vr::VREvent_t event = {};
-//
-//		while (hmd->PollNextEvent(&event, sizeof(event))) {
-//			switch (event.eventType) {
-//			case vr::EVREventType::VREvent_TrackedDeviceActivated: {
-//				// A tracked device was plugged in or otherwise detected by the system. There is no data, but the trackedDeviceIndex will be the index of the new device.
-//				controllerModels.clear();
-//				get_active_controllers(hmd, &controllerNames, &controllerDeviceIndex, &trackerDeviceIndex);
-//				break;
-//			}
-//			case vr::EVREventType::VREvent_TrackedDeviceDeactivated: {
-//				// A tracked device was unplugged or the system is no longer able to contact it in some other way. Data is not used for this event.
-//				controllerModels.clear();
-//				get_active_controllers(hmd, &controllerNames, &controllerDeviceIndex, &trackerDeviceIndex);
-//				break;
-//			}
-//			case vr::EVREventType::VREvent_ButtonPress: {
-//				// The user has pressed a button on a controller. The controller struct in data identifies the button.
-//
-//				// TODO HANDLE BUTTON PRESSES
-//				break;
-//			}
-//			case vr::EVREventType::VREvent_ButtonUnpress: {
-//				// The user has stopped pressing a button on a controller. The controller struct in data identifies the button.
-//
-//				// TODO HANDLE BUTTON UNPRESSES
-//				
-//				break;
-//			}
-//			}
-//		}
-//
-//		// Fetch the models if they are not yet loaded
-//		if (controllerNames.size() > controllerModels.size()) {
-//			fetchModels(&controllerModels, &controllerNames);
-//		}
-//
-//		for (int eyeIt = 0; eyeIt < 2; eyeIt++)
-//		{
-//			assert(hmd != nullptr);
-//
-//			// get eye projection matrics and pose
-//			vr::Hmdglm::mat44_t mat = hmd->GetProjectionMatrix((vr::EVREye)eyeIt, 1, 100);
-//			float eyeProjectionMat[16] = {
-//				mat.m[0][0], mat.m[1][0], mat.m[2][0], mat.m[3][0],
-//				mat.m[0][1], mat.m[1][1], mat.m[2][1], mat.m[3][1],
-//				mat.m[0][2], mat.m[1][2], mat.m[2][2], mat.m[3][2],
-//				mat.m[0][3], mat.m[1][3], mat.m[2][3], mat.m[3][3]
-//			};
-//
-//			vr::HmdMatrix34_t matEyeTrans = hmd->GetEyeToHeadTransform((vr::EVREye)eyeIt);
-//			float eyeToHeadTrans[16] = {
-//				matEyeTrans.m[0][0], matEyeTrans.m[1][0], matEyeTrans.m[2][0], 0.0,
-//				matEyeTrans.m[0][1], matEyeTrans.m[1][1], matEyeTrans.m[2][1], 0.0,
-//				matEyeTrans.m[0][2], matEyeTrans.m[1][2], matEyeTrans.m[2][2], 0.0,
-//				matEyeTrans.m[0][3], matEyeTrans.m[1][3], matEyeTrans.m[2][3], 1.0f
-//			};
-//
-//			vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);
-//
-//			for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice)
-//			{
-//				if (m_rTrackedDevicePose[nDevice].bPoseIsValid)
-//				{
-//					m_rmat4DevicePose[nDevice] = {
-//						matPose.m[0][0], matPose.m[1][0], matPose.m[2][0], 0.0,
-//						matPose.m[0][1], matPose.m[1][1], matPose.m[2][1], 0.0,
-//						matPose.m[0][2], matPose.m[1][2], matPose.m[2][2], 0.0,
-//						matPose.m[0][3], matPose.m[1][3], matPose.m[2][3], 1.0f
-//					};	
-//						
-//					if (m_rDevClassChar[nDevice] == 0)
-//					{
-//						switch (m_pHMD->GetTrackedDeviceClass(nDevice))
-//						{
-//						case vr::TrackedDeviceClass_Controller:        m_rDevClassChar[nDevice] = 'C'; break;
-//						case vr::TrackedDeviceClass_HMD:               m_rDevClassChar[nDevice] = 'H'; break;
-//						case vr::TrackedDeviceClass_Invalid:           m_rDevClassChar[nDevice] = 'I'; break;
-//						case vr::TrackedDeviceClass_GenericTracker:    m_rDevClassChar[nDevice] = 'G'; break;
-//						case vr::TrackedDeviceClass_TrackingReference: m_rDevClassChar[nDevice] = 'T'; break;
-//						default:                                       m_rDevClassChar[nDevice] = '?'; break;
-//						}
-//					}
-//					m_strPoseClasses += m_rDevClassChar[nDevice];
-//				}
-//			}
-//
-//			if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
-//			{
-//				m_mat4HMDPose = m_rmat4DevicePose[vr::k_unTrackedDeviceIndex_Hmd];
-//				m_mat4HMDPose.invert();
-//			}
-//
-//		}
-//	}
-//
-//	delete modellingMesh;
-//	modellingMesh = nullptr;
-//
-//	// Clean up window...
-//	glfwDestroyWindow(l_Window);
-//	glfwTerminate();
-//
-//	return 1;
-//}
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -704,8 +173,6 @@ private: // SDL bookkeeping
 	//SDL_GLContext m_pContext;
 
 private: // OpenGL bookkeeping
-	int m_iTrackedControllerCount;
-	int m_iTrackedControllerCount_Last;
 	int m_iValidPoseCount;
 	int m_iValidPoseCount_Last;
 	bool m_bShowCubes;
@@ -890,8 +357,6 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	, m_nSceneMatrixLocation(-1)
 	, m_nControllerMatrixLocation(-1)
 	, m_nRenderModelMatrixLocation(-1)
-	, m_iTrackedControllerCount(0)
-	, m_iTrackedControllerCount_Last(-1)
 	, m_iValidPoseCount(0)
 	, m_iValidPoseCount_Last(-1)
 	, m_iSceneVolumeInit(20)
@@ -1015,13 +480,6 @@ bool CMainApplication::BInit()
 		return false;
 	}
 	glGetError(); // to clear the error caused deep in GLEW
-
-	// TODO NOT NEEDED?
-	//m_strDriver = "No Driver";
-	//m_strDisplay = "No Display";
-
-	//m_strDriver = GetTrackedDeviceString(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String);
-	//m_strDisplay = GetTrackedDeviceString(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_SerialNumber_String);
 
 	// cube array
 	m_iSceneVolumeWidth = m_iSceneVolumeInit;
@@ -1410,12 +868,11 @@ void CMainApplication::RenderFrame()
 	}
 
 	// Spew out the controller and pose count whenever they change.
-	if (m_iTrackedControllerCount != m_iTrackedControllerCount_Last || m_iValidPoseCount != m_iValidPoseCount_Last)
+	if (m_iValidPoseCount != m_iValidPoseCount_Last)
 	{
 		m_iValidPoseCount_Last = m_iValidPoseCount;
-		m_iTrackedControllerCount_Last = m_iTrackedControllerCount;
 
-		printf("PoseCount:%d(%s) Controllers:%d\n", m_iValidPoseCount, m_strPoseClasses.c_str(), m_iTrackedControllerCount);
+		printf("PoseCount:%d(%s)\n", m_iValidPoseCount, m_strPoseClasses.c_str());
 	}
 
 	UpdateHMDMatrixPose();
@@ -1653,12 +1110,6 @@ void CMainApplication::SetupScene()
 
 	glm::mat4 mat = matScale * matTransform;
 
-	glm::mat4 testMat = mat;
-	printf("scene mat \n %f %f %f %f \n %f %f %f %f \n %f %f %f %f \n %f %f %f %f \n", testMat[0][0], testMat[1][0], testMat[2][0], testMat[3][0]
-		, testMat[0][1], testMat[1][1], testMat[2][1], testMat[3][1]
-		, testMat[0][2], testMat[1][2], testMat[2][2], testMat[3][2]
-		, testMat[0][3], testMat[1][3], testMat[2][3], testMat[3][3]);
-
 	for (int z = 0; z < m_iSceneVolumeDepth; z++)
 	{
 		for (int y = 0; y < m_iSceneVolumeHeight; y++)
@@ -1666,13 +1117,6 @@ void CMainApplication::SetupScene()
 			for (int x = 0; x < m_iSceneVolumeWidth; x++)
 			{
 				AddCubeToScene(mat, vertdataarray);
-
-				glm::mat4 testMat = mat;
-				printf("cube index %d \n %f %f %f %f \n %f %f %f %f \n %f %f %f %f \n %f %f %f %f \n", x, testMat[0][0], testMat[1][0], testMat[2][0], testMat[3][0]
-					, testMat[0][1], testMat[1][1], testMat[2][1], testMat[3][1]
-					, testMat[0][2], testMat[1][2], testMat[2][2], testMat[3][2]
-					, testMat[0][3], testMat[1][3], testMat[2][3], testMat[3][3]);
-
 				mat = mat * translate(glm::mat4(1.0f), glm::vec3(m_fScaleSpacing, 0.0f, 0.0f));
 			}
 			mat = mat * translate(glm::mat4(1.0f), glm::vec3(-((float)m_iSceneVolumeWidth) * m_fScaleSpacing, m_fScaleSpacing, 0.0f));
@@ -1803,7 +1247,6 @@ void CMainApplication::RenderControllerAxes()
 	std::vector<float> vertdataarray;
 
 	m_uiControllerVertcount = 0;
-	m_iTrackedControllerCount = 0;
 
 	for (EHand eHand = Left; eHand <= Right; ((int&)eHand)++)
 	{
@@ -2328,18 +1771,7 @@ void CMainApplication::UpdateHMDMatrixPose()
 			}
 			m_strPoseClasses += m_rDevClassChar[nDevice];
 		}
-	
-		// Debug HMD pose
-		//glm::mat4 testMat = m_rmat4DevicePose[nDevice];
-		//if (m_rDevClassChar[nDevice] == 'H')
-		//	printf("Device pose \n %f %f %f %f \n %f %f %f %f \n %f %f %f %f \n %f %f %f %f \n", testMat[0][0], testMat[1][0], testMat[2][0], testMat[3][0]
-		//																					   , testMat[0][1], testMat[1][1], testMat[2][1], testMat[3][1]
-		//																					   , testMat[0][2], testMat[1][2], testMat[2][2], testMat[3][2]
-		//																					   , testMat[0][3], testMat[1][3], testMat[2][3], testMat[3][3]);
-
 	}
-
-
 
 	if (m_rTrackedDevicePose[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid)
 	{
