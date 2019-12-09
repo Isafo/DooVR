@@ -72,8 +72,8 @@ DynamicMesh::DynamicMesh(std::string fileName)
 	edgeCap(0),
 	HNR(0),
 	CNR(0),
-	MAX_LENGTH(0.025f * 0.2f),
-	MIN_LENGTH(0.0124f * 0.2f) 
+	MAX_LENGTH(0.09),
+	MIN_LENGTH(0.025f) 
 {
 	//vertexArray = new vertex[MAX_VERTEX_COUNT];
 	//vInfoArray = new vInfo[MAX_VERTEX_COUNT];

@@ -2,6 +2,15 @@
 
 
 Mesh::Mesh()
+	: vertexArray(nullptr)
+	, nrofVerts(0)
+	, triangleArray(nullptr)
+	, nrofTris(0)
+	, position{ 0.0f, 0.0f, 0.0f }
+	, orientation{ 1.0f, 0.0f, 0.0f, 0.0f,
+				   0.0f, 1.0f, 0.0f, 0.0f,
+				   0.0f, 0.0f, 1.0f, 0.0f,
+				   0.0f, 0.0f, 0.0f, 1.0f }
 {
 }
 

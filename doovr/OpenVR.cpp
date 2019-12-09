@@ -51,6 +51,10 @@ do {                                                       \
 #include <glm/gtx/transform.hpp>
 #include <thread>
 #include <chrono>
+#include "Shader.h"
+#include "MatrixStack.h"
+#include "StaticMesh.h"
+#include "DynamicMesh.h"
 
 #ifndef _WIN32
 #define APIENTRY
@@ -109,8 +113,6 @@ public:
 	void RenderFrame();
 
 	void SetupScene();
-	void AddCubeToScene(glm::mat4 mat, std::vector<float>& vertdata);
-	void AddCubeVertex(float fl0, float fl1, float fl2, float fl3, float fl4, std::vector<float>& vertdata);
 
 	void RenderControllerAxes();
 
@@ -165,12 +167,11 @@ private:
 	};
 	ControllerInfo_t m_rHand[2];
 
-private: // SDL bookkeeping
+private: // bookkeeping
 	GLFWwindow* m_pCompanionWindow;
 	uint32_t m_nCompanionWindowWidth;
 	uint32_t m_nCompanionWindowHeight;
 
-	//SDL_GLContext m_pContext;
 
 private: // OpenGL bookkeeping
 	int m_iValidPoseCount;
@@ -262,6 +263,21 @@ private: // OpenGL bookkeeping
 	vr::VRActionHandle_t m_actionAnalongInput = vr::k_ulInvalidActionHandle;
 
 	vr::VRActionSetHandle_t m_actionsetDemo = vr::k_ulInvalidActionSetHandle;
+
+private: // Scene data
+	Shader m_sceneShader;
+	Shader m_meshShader;
+	Shader m_flatShader;
+
+	MatrixStack m_MVstack;
+
+	DynamicMesh* m_modellingMesh;
+
+	GLint m_locationFlatMV;
+	GLint m_locationFlatP;
+	GLint m_locationFlatLP;
+	GLint m_locationFlatLP2;
+	GLint m_locationFlatM;
 };
 
 
@@ -530,18 +546,6 @@ bool CMainApplication::BInit()
 	return true;
 }
 
-
-//-----------------------------------------------------------------------------
-// Purpose: Outputs the string in message to debugging output.
-//          All other parameters are ignored.
-//          Does not return any meaningful value or reference.
-//-----------------------------------------------------------------------------
-void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
-{
-	printf("GL Error: %s\n", message);
-}
-
-
 //-----------------------------------------------------------------------------
 // Purpose: Initialize OpenGL. Returns true if OpenGL has been successfully
 //          initialized, false if shaders could not be created.
@@ -550,16 +554,6 @@ void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severi
 //-----------------------------------------------------------------------------
 bool CMainApplication::BInitGL()
 {
-	if (m_bDebugOpenGL)
-	{
-		glDebugMessageCallback((GLDEBUGPROC)DebugCallback, nullptr);
-		GL_CHECK_ERROR;
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-		GL_CHECK_ERROR;
-		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-		GL_CHECK_ERROR;
-	}
-
 	if (!CreateAllShaders())
 		return false;
 
@@ -1101,137 +1095,49 @@ void CMainApplication::SetupScene()
 	if (!m_pHMD)
 		return;
 
-	std::vector<float> vertdataarray;
+	m_sceneShader.createShader("sceneV.glsl", "sceneF.glsl");
+	m_meshShader.createShader("meshV.glsl", "meshF.glsl");
+	m_flatShader.createShader("meshFlatV.glsl", "meshFlatF.glsl");
 
-	glm::mat4 matScale = glm::mat4(1.0f);
-	matScale = glm::scale(matScale, glm::vec3(m_fScale, m_fScale, m_fScale));
-	glm::mat4 matTransform = glm::mat4(1.0f);
-	matTransform = glm::translate(matTransform, glm::vec3(-((float)m_iSceneVolumeWidth * m_fScaleSpacing) / 2.f, -((float)m_iSceneVolumeHeight * m_fScaleSpacing) / 2.f, -((float)m_iSceneVolumeDepth * m_fScaleSpacing) / 2.f));
+	//GLint m_locationLP = glGetUniformLocation(m_sceneShader.programID, "lightPos");
+	//GLint m_locationP = glGetUniformLocation(m_sceneShader.programID, "P"); //perspective matrix
+	//GLint m_locationMV = glGetUniformLocation(m_sceneShader.programID, "MV"); //modelview matrix
+	//GLint m_locationTex = glGetUniformLocation(m_sceneShader.programID, "tex"); //texcoords
 
-	glm::mat4 mat = matScale * matTransform;
+	//GLint m_locationMeshMV = glGetUniformLocation(m_meshShader.programID, "MV"); //modelview matrix
+	//GLint m_locationMeshP = glGetUniformLocation(m_meshShader.programID, "P"); //perspective matrix
+	//GLint m_locationMeshLP = glGetUniformLocation(m_meshShader.programID, "lightPos");
+	//GLint m_locationMeshLP2 = glGetUniformLocation(m_meshShader.programID, "lightPos2");
+	//GLint m_locationMeshM = glGetUniformLocation(m_meshShader.programID, "modelMatrix");
+	//GLint m_locationMeshWP = glGetUniformLocation(m_meshShader.programID, "wandPos");
+	//GLint m_locationMeshWD = glGetUniformLocation(m_meshShader.programID, "wandDirr");
+	//GLint m_locationMeshTex = glGetUniformLocation(m_meshShader.programID, "tex"); //texture sampler
+	//GLint m_locationMeshDTex = glGetUniformLocation(m_meshShader.programID, "dTex"); //texture sampler
+	//GLint m_locationMeshLMVP = glGetUniformLocation(m_meshShader.programID, "LMVP");
+	//GLint m_locationMeshPP = glGetUniformLocation(m_meshShader.programID, "PP");
+	//GLint m_locationMeshIntersectionP = glGetUniformLocation(m_meshShader.programID, "IntersectionP");
+	//GLint m_locationMeshIntersectionN = glGetUniformLocation(m_meshShader.programID, "IntersectionN");
+	//GLint m_locationMeshRad = glGetUniformLocation(m_meshShader.programID, "Radius");
 
-	for (int z = 0; z < m_iSceneVolumeDepth; z++)
-	{
-		for (int y = 0; y < m_iSceneVolumeHeight; y++)
-		{
-			for (int x = 0; x < m_iSceneVolumeWidth; x++)
-			{
-				AddCubeToScene(mat, vertdataarray);
-				mat = mat * translate(glm::mat4(1.0f), glm::vec3(m_fScaleSpacing, 0.0f, 0.0f));
-			}
-			mat = mat * translate(glm::mat4(1.0f), glm::vec3(-((float)m_iSceneVolumeWidth) * m_fScaleSpacing, m_fScaleSpacing, 0.0f));
-		}
-		mat = mat * translate(glm::mat4(1.0f), glm::vec3(0.0f, -((float)m_iSceneVolumeHeight) * m_fScaleSpacing, m_fScaleSpacing));
-	}
-	m_uiVertcount = vertdataarray.size() / 5;
 
-	glGenVertexArrays(1, &m_unSceneVAO);
+	m_locationFlatMV = glGetUniformLocation(m_flatShader.programID, "MV"); //modelview matrix
 	GL_CHECK_ERROR;
-	glBindVertexArray(m_unSceneVAO);
+	m_locationFlatP = glGetUniformLocation(m_flatShader.programID, "P"); //perspective matrix
 	GL_CHECK_ERROR;
-
-	glGenBuffers(1, &m_glSceneVertBuffer);
+	m_locationFlatLP = glGetUniformLocation(m_flatShader.programID, "lightPos");
 	GL_CHECK_ERROR;
-	glBindBuffer(GL_ARRAY_BUFFER, m_glSceneVertBuffer);
+	m_locationFlatLP2 = glGetUniformLocation(m_flatShader.programID, "lightPos2");
 	GL_CHECK_ERROR;
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STATIC_DRAW);
-	GL_CHECK_ERROR;
+	m_locationFlatM = glGetUniformLocation(m_flatShader.programID, "modelMatrix");
 
-	GLsizei stride = sizeof(VertexDataScene);
-	uintptr_t offset = 0;
+	m_MVstack.init();
+	// TODO look at making this a uniue pointer
+	m_modellingMesh = new DynamicMesh();
+	glm::vec3 tempVec = glm::vec3(0.0f, 1.40f, 0.0f);
+	m_modellingMesh->sphereSubdivide(0.1f);
+	m_modellingMesh->setPosition((&tempVec[0]));
+	m_modellingMesh->createBuffers();
 
-	glEnableVertexAttribArray(0);
-	GL_CHECK_ERROR;
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void*)offset);
-	GL_CHECK_ERROR;
-
-	offset += sizeof(glm::vec3);
-	glEnableVertexAttribArray(1);
-	GL_CHECK_ERROR;
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (const void*)offset);
-	GL_CHECK_ERROR;
-
-	glBindVertexArray(0);
-	GL_CHECK_ERROR;
-	glDisableVertexAttribArray(0);
-	GL_CHECK_ERROR;
-	glDisableVertexAttribArray(1);
-	GL_CHECK_ERROR;
-
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::AddCubeVertex(float fl0, float fl1, float fl2, float fl3, float fl4, std::vector<float>& vertdata)
-{
-	vertdata.push_back(fl0);
-	vertdata.push_back(fl1);
-	vertdata.push_back(fl2);
-	vertdata.push_back(fl3);
-	vertdata.push_back(fl4);
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CMainApplication::AddCubeToScene(glm::mat4 mat, std::vector<float>& vertdata)
-{
-	// glm::mat4 mat( outermat.data() );
-
-	glm::vec4 A = mat * glm::vec4(0, 0, 0, 1);
-	glm::vec4 B = mat * glm::vec4(1, 0, 0, 1);
-	glm::vec4 C = mat * glm::vec4(1, 1, 0, 1);
-	glm::vec4 D = mat * glm::vec4(0, 1, 0, 1);
-	glm::vec4 E = mat * glm::vec4(0, 0, 1, 1);
-	glm::vec4 F = mat * glm::vec4(1, 0, 1, 1);
-	glm::vec4 G = mat * glm::vec4(1, 1, 1, 1);
-	glm::vec4 H = mat * glm::vec4(0, 1, 1, 1);
-
-	// triangles instead of quads
-	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata); //Front
-	AddCubeVertex(F.x, F.y, F.z, 1, 1, vertdata);
-	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata);
-	AddCubeVertex(G.x, G.y, G.z, 1, 0, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 0, 0, vertdata);
-	AddCubeVertex(E.x, E.y, E.z, 0, 1, vertdata);
-
-	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata); //Back
-	AddCubeVertex(A.x, A.y, A.z, 1, 1, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 1, 0, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 0, 0, vertdata);
-	AddCubeVertex(B.x, B.y, B.z, 0, 1, vertdata);
-
-	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata); //Top
-	AddCubeVertex(G.x, G.y, G.z, 1, 1, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 0, 1, vertdata);
-
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata); //Bottom
-	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata);
-	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata);
-	AddCubeVertex(F.x, F.y, F.z, 1, 0, vertdata);
-	AddCubeVertex(E.x, E.y, E.z, 0, 0, vertdata);
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata);
-
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata); //Left
-	AddCubeVertex(E.x, E.y, E.z, 1, 1, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata);
-	AddCubeVertex(H.x, H.y, H.z, 1, 0, vertdata);
-	AddCubeVertex(D.x, D.y, D.z, 0, 0, vertdata);
-	AddCubeVertex(A.x, A.y, A.z, 0, 1, vertdata);
-
-	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata); //Right
-	AddCubeVertex(B.x, B.y, B.z, 1, 1, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(C.x, C.y, C.z, 1, 0, vertdata);
-	AddCubeVertex(G.x, G.y, G.z, 0, 0, vertdata);
-	AddCubeVertex(F.x, F.y, F.z, 0, 1, vertdata);
 }
 
 
@@ -1577,21 +1483,6 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glEnable(GL_DEPTH_TEST);
 	GL_CHECK_ERROR;
 
-	if (m_bShowCubes)
-	{
-		glUseProgram(m_unSceneProgramID);
-		GL_CHECK_ERROR; 
-		glUniformMatrix4fv(m_nSceneMatrixLocation, 1, GL_FALSE, &GetCurrentViewProjectionMatrix(nEye)[0][0]);
-		GL_CHECK_ERROR;
-		glBindVertexArray(m_unSceneVAO);
-		GL_CHECK_ERROR; 
-		glBindTexture(GL_TEXTURE_2D, m_iTexture);
-		GL_CHECK_ERROR; 
-		glDrawArrays(GL_TRIANGLES, 0, m_uiVertcount);
-		glBindVertexArray(0);
-		GL_CHECK_ERROR;
-	}
-
 	bool bIsInputAvailable = m_pHMD->IsInputAvailable();
 
 	if (bIsInputAvailable)
@@ -1624,6 +1515,21 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 		m_rHand[eHand].m_pRenderModel->Draw();
 	}
+
+	glUseProgram(m_flatShader.programID);
+	glUniformMatrix4fv(m_locationFlatP, 1, GL_FALSE, &GetCurrentViewProjectionMatrix(nEye)[0][0]);
+
+	m_MVstack.push();
+	m_MVstack.translate(m_modellingMesh->getPosition());
+	m_MVstack.multiply(m_modellingMesh->getOrientation());
+	glUniformMatrix4fv(m_locationFlatMV, 1, GL_FALSE, m_MVstack.getCurrentMatrix());
+
+	glm::vec4 temp = glm::vec4(0.0f, 2.0f, 0.0f, 0.0f);
+	glUniform4fv(m_locationFlatLP, 1, &temp[0]);
+	glUniform4fv(m_locationFlatLP2, 1, &temp[0]);
+
+	m_modellingMesh->render();
+	m_MVstack.pop();
 
 	glUseProgram(0);
 	GL_CHECK_ERROR;

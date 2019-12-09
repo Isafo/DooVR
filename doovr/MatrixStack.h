@@ -2,7 +2,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "Utilities.h"
 
 // A linked list implementing a matrix stack
 

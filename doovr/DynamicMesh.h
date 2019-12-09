@@ -1,5 +1,4 @@
 #pragma once
-#include "Utilities.h"
 #include "linAlg.h"
 #include "Mesh.h"
 #include "Wand.h"

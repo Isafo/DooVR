@@ -1,5 +1,4 @@
 #pragma once
-#include "Utilities.h"
 #include "linAlg.h"
 
 class Wand
