@@ -526,23 +526,6 @@ bool CMainApplication::BInit()
 		return false;
 	}
 
-	//vr::VRInput()->SetActionManifestPath(Path_MakeAbsolute("../hellovr_actions.json", Path_StripFilename(Path_GetExecutablePath())).c_str());
-
-	vr::VRInput()->GetActionHandle("/actions/demo/in/HideCubes", &m_actionHideCubes);
-	vr::VRInput()->GetActionHandle("/actions/demo/in/HideThisController", &m_actionHideThisController);
-	vr::VRInput()->GetActionHandle("/actions/demo/in/TriggerHaptic", &m_actionTriggerHaptic);
-	vr::VRInput()->GetActionHandle("/actions/demo/in/AnalogInput", &m_actionAnalongInput);
-
-	vr::VRInput()->GetActionSetHandle("/actions/demo", &m_actionsetDemo);
-
-	vr::VRInput()->GetActionHandle("/actions/demo/out/Haptic_Left", &m_rHand[Left].m_actionHaptic);
-	vr::VRInput()->GetInputSourceHandle("/user/hand/left", &m_rHand[Left].m_source);
-	vr::VRInput()->GetActionHandle("/actions/demo/in/Hand_Left", &m_rHand[Left].m_actionPose);
-
-	vr::VRInput()->GetActionHandle("/actions/demo/out/Haptic_Right", &m_rHand[Right].m_actionHaptic);
-	vr::VRInput()->GetInputSourceHandle("/user/hand/right", &m_rHand[Right].m_source);
-	vr::VRInput()->GetActionHandle("/actions/demo/in/Hand_Right", &m_rHand[Right].m_actionPose);
-
 	return true;
 }
 
@@ -583,8 +566,7 @@ bool CMainApplication::BInitCompositor()
 	}
 
 	return true;
-}
-
+} 
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -747,31 +729,43 @@ void CMainApplication::HandleInput()
 		}
 	}
 
-	for (EHand eHand = Left; eHand <= Right; ((int&)eHand)++)
-	{
-		vr::InputPoseActionData_t poseData;
-		if (vr::VRInput()->GetPoseActionDataForNextFrame(m_rHand[eHand].m_actionPose, vr::TrackingUniverseStanding, &poseData, sizeof(poseData), vr::k_ulInvalidInputValueHandle) != vr::VRInputError_None
-			|| !poseData.bActive || !poseData.pose.bPoseIsValid)
-		{
-			m_rHand[eHand].m_bShowController = false;
-		}
-		else
-		{
-			m_rHand[eHand].m_rmat4Pose = ConvertSteamVRMatrixToMatrix4(poseData.pose.mDeviceToAbsoluteTracking);
+	int controllerIt = 0;
+	vr::InputPoseActionData_t poseData;
 
-			vr::InputOriginInfo_t originInfo;
-			if (vr::VRInput()->GetOriginTrackedDeviceInfo(poseData.activeOrigin, &originInfo, sizeof(originInfo)) == vr::VRInputError_None
-				&& originInfo.trackedDeviceIndex != vr::k_unTrackedDeviceIndexInvalid)
-			{
-				std::string sRenderModelName = GetTrackedDeviceString(originInfo.trackedDeviceIndex, vr::Prop_RenderModelName_String);
-				if (sRenderModelName != m_rHand[eHand].m_sRenderModelName)
-				{
-					m_rHand[eHand].m_pRenderModel = FindOrLoadRenderModel(sRenderModelName.c_str());
-					m_rHand[eHand].m_sRenderModelName = sRenderModelName;
-				}
-			}
+	for (unsigned int id = 0; id < vr::k_unMaxTrackedDeviceCount; id++) {
+		vr::ETrackedDeviceClass trackedDeviceClass =
+			m_pHMD->GetTrackedDeviceClass(id);
+		if (trackedDeviceClass !=
+			vr::ETrackedDeviceClass::TrackedDeviceClass_Controller ||
+			!m_pHMD->IsTrackedDeviceConnected(id))
+			continue;
+
+		if (controllerIt == 2)
+			break;
+
+		//Confirmed that the device in question is a connected controller
+
+		//This is all copied from above:
+		vr::TrackedDevicePose_t trackedDevicePose;
+		vr::VRControllerState_t controllerState;
+		m_pHMD->GetControllerStateWithPose(
+			vr::TrackingUniverseStanding, id, &controllerState,
+			sizeof(controllerState), &trackedDevicePose);
+
+		m_rHand[controllerIt].m_rmat4Pose = ConvertSteamVRMatrixToMatrix4(trackedDevicePose.mDeviceToAbsoluteTracking);
+
+		vr::InputOriginInfo_t originInfo;
+		std::string sRenderModelName = GetTrackedDeviceString(id, vr::Prop_RenderModelName_String);
+		if (sRenderModelName != m_rHand[controllerIt].m_sRenderModelName)
+		{
+			m_rHand[controllerIt].m_pRenderModel = FindOrLoadRenderModel(sRenderModelName.c_str());
+			m_rHand[controllerIt].m_sRenderModelName = sRenderModelName;
 		}
+
+		controllerIt++;
 	}
+		
+	
 }
 
 //-----------------------------------------------------------------------------
@@ -798,6 +792,11 @@ void CMainApplication::ProcessVREvent(const vr::VREvent_t& event)
 	case vr::VREvent_TrackedDeviceDeactivated:
 	{
 		printf("Device %u detached.\n", event.trackedDeviceIndex);
+	}
+	break;
+	case vr::VREvent_TrackedDeviceActivated:
+	{
+		printf("Device %u atached.\n", event.trackedDeviceIndex);
 	}
 	break;
 	case vr::VREvent_TrackedDeviceUpdated:
@@ -1012,7 +1011,7 @@ bool CMainApplication::CreateAllShaders()
 		"out vec4 outputColor;\n"
 		"void main()\n"
 		"{\n"
-		"   outputColor = vec4(1.0, 0.0, 0.0, 1.0);//v4Color;\n"
+		"   outputColor = v4Color;\n"
 		"}\n"
 	);
 	m_nControllerMatrixLocation = glGetUniformLocation(m_unControllerTransformProgramID, "matrix");
@@ -1045,7 +1044,7 @@ bool CMainApplication::CreateAllShaders()
 		"out vec4 outputColor;\n"
 		"void main()\n"
 		"{\n"
-		"   outputColor = vec4(1.0, 0.0, 0.0, 1.0);//texture( diffuse, v2TexCoord);\n"
+		"   outputColor = texture( diffuse, v2TexCoord);\n"
 		"}\n"
 
 	);
@@ -1077,7 +1076,7 @@ bool CMainApplication::CreateAllShaders()
 		"out vec4 outputColor;\n"
 		"void main()\n"
 		"{\n"
-		"		outputColor = vec4(1.0, 0.0, 0.0, 1.0);//texture(mytexture, v2UV);\n"
+		"		outputColor = texture(mytexture, v2UV);\n"
 		"}\n"
 	);
 
@@ -1140,7 +1139,6 @@ void CMainApplication::SetupScene()
 	m_modellingMesh->sphereSubdivide(0.1f);
 	m_modellingMesh->setPosition((&tempVec[0]));
 	m_modellingMesh->createBuffers();
-
 }
 
 
