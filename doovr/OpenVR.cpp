@@ -1095,9 +1095,12 @@ void CMainApplication::SetupScene()
 	if (!m_pHMD)
 		return;
 
-	m_sceneShader.createShader("sceneV.glsl", "sceneF.glsl");
-	m_meshShader.createShader("meshV.glsl", "meshF.glsl");
-	m_flatShader.createShader("meshFlatV.glsl", "meshFlatF.glsl");
+	m_sceneShader.createShader("shaders/sceneV.glsl", "shaders/sceneF.glsl");
+	GL_CHECK_ERROR;
+	m_meshShader.createShader("shaders/meshV.glsl", "shaders/meshF.glsl");
+	GL_CHECK_ERROR;
+	m_flatShader.createShader("shaders/meshFlatV.glsl", "shaders/meshFlatF.glsl");
+	GL_CHECK_ERROR;
 
 	//GLint m_locationLP = glGetUniformLocation(m_sceneShader.programID, "lightPos");
 	//GLint m_locationP = glGetUniformLocation(m_sceneShader.programID, "P"); //perspective matrix

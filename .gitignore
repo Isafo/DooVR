@@ -19,7 +19,6 @@ x64/
 x86/
 build/
 bld/
-[Bb]in/
 [Oo]bj/
 server/
 Src/
@@ -245,7 +244,6 @@ Temporary Items
 *.lai
 *.la
 *.a
-*.dll
 
 # Executables
 *.exe
